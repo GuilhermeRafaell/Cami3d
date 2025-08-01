@@ -1,12 +1,18 @@
-import { User, LogOut } from 'lucide-react'
+import { User, LogOut, Home } from 'lucide-react'
 
-function Header({ isLoggedIn, onLogin, onLogout }) {
+function Header({ isLoggedIn, onLogin, onLogout, onNavigateToHome }) {
   return (
     <header className="header">
       <div className="header-content">
-        <div className="logo-section">
-          <h1 className="app-title">Cami3D</h1>
-          <span className="app-subtitle">Personalize sua camiseta em 3D</span>
+        <div className="header-left">
+          <button className="home-btn" onClick={onNavigateToHome}>
+            <Home size={20} />
+            <span>Home</span>
+          </button>
+          <div className="logo-section">
+            <h1 className="app-title">Cami3D</h1>
+            <span className="app-subtitle">Personalize sua camiseta em 3D</span>
+          </div>
         </div>
         
         <div className="auth-section">

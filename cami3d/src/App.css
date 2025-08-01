@@ -14,8 +14,15 @@
 .app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  heightinput[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  cursor: pointer;
+}
 }
 
 /* Header */
@@ -33,6 +40,33 @@
   align-items: center;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.home-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.home-btn:hover {
+  background: #f5f5f5;
+  border-color: #667eea;
+  color: #667eea;
+  transform: translateY(-1px);
 }
 
 .logo-section {
@@ -230,6 +264,7 @@ input[type="range"] {
   border-radius: 3px;
   background: #ddd;
   outline: none;
+  appearance: none;
   -webkit-appearance: none;
 }
 
@@ -522,6 +557,25 @@ input[type="range"]::-webkit-slider-thumb {
 .submit-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.forgot-password {
+  text-align: right;
+  margin-bottom: 1rem;
+}
+
+.forgot-link {
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.forgot-link:hover {
+  color: #764ba2;
 }
 
 .auth-switch {
