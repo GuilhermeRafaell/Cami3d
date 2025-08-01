@@ -101,9 +101,9 @@ function Home({ onNavigateToApp }) {
         <Modal onClose={() => setShowAboutModal(false)}>
           <h2>Sobre o Cami3D</h2>
           <p>
-            O Cami3D é uma plataforma inovadora que permite personalizar camisetas 
-            usando tecnologia 3D avançada. Nossa missão é democratizar a criação 
-            de roupas personalizadas, oferecendo uma experiência única e intuitiva.
+            A plataforma <b>"Cami3D"</b> é um inovador <b>Software as a Service (SaaS)</b> desenvolvido por três alunos do curso de Sistemas de Informação da <b>Universidade Federal de Uberlândia (UFU)</b>, 
+            como parte do projeto da 
+            disciplina <b>"Projeto de Desenvolvimento de Sistemas 2"</b>.
           </p>
           <p>
             <strong>Recursos principais:</strong>
