@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Shirt, Sparkles, Users, Mail, ArrowRight } from 'lucide-react'
 import Modal from './Modal'
 import AuthModal from './AuthModal'
+import logoImage from '../assets/logo.png'
 import './Home.css'
 
 function Home({ onNavigateToApp }) {
@@ -15,7 +16,7 @@ function Home({ onNavigateToApp }) {
       <header className="home-header">
         <div className="home-header-content">
           <div className="logo">
-            <Shirt className="logo-icon" />
+            <img src={logoImage} alt="Cami3D Logo" className="logo-icon" />
             <span className="logo-text">Cami3D</span>
           </div>
           

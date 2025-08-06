@@ -28,7 +28,7 @@
 .logo-icon {
   width: 32px;
   height: 32px;
-  color: #fff;
+  object-fit: contain;
 }
 
 .logo-text {
