@@ -1,0 +1,701 @@
+{
+  "info": {
+    "_postman_id": "cami3d-api-collection",
+    "name": "Cami3D Backend API",
+    "description": "Coleção completa da API do sistema de personalização de camisetas 3D Cami3D\n\n### Como usar:\n1. Configure a variável `base_url` para `http://localhost:3001`\n2. Faça o registro/login para obter o token JWT\n3. Configure a variável `jwt_token` com o token recebido\n4. Execute os testes de cada endpoint\n\n### Autenticação:\nA maioria dos endpoints requer autenticação JWT. O token deve ser incluído no header:\n`Authorization: Bearer {{jwt_token}}`",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Pre-request script para configurações globais",
+          "pm.request.headers.add({",
+          "    key: 'Content-Type',",
+          "    value: 'application/json'",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "design_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "image_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🏥 Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Verifica se a API está funcionando corretamente"
+      },
+      "response": []
+    },
+    {
+      "name": "🔐 Autenticação",
+      "item": [
+        {
+          "name": "Registrar Usuário",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Salvar token JWT nas variáveis da coleção",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.token) {",
+                  "        pm.collectionVariables.set('jwt_token', response.token);",
+                  "        pm.collectionVariables.set('user_id', response.user.id);",
+                  "        console.log('Token JWT salvo:', response.token);",
+                  "    }",
+                  "}",
+                  "",
+                  "// Testes de validação",
+                  "pm.test('Status code é 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Resposta contém token', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token');",
+                  "    pm.expect(jsonData).to.have.property('user');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Fulano de Tal\",\n    \"username\": \"fulano\",\n    \"email\": \"fulano@mail.com\",\n    \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Registra um novo usuário no sistema"
+          },
+          "response": []
+        },
+        {
+          "name": "Login Usuário",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Salvar token JWT nas variáveis da coleção",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.token) {",
+                  "        pm.collectionVariables.set('jwt_token', response.token);",
+                  "        pm.collectionVariables.set('user_id', response.user.id);",
+                  "        console.log('Token JWT salvo:', response.token);",
+                  "    }",
+                  "}",
+                  "",
+                  "// Testes de validação",
+                  "pm.test('Status code é 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Resposta contém token', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token');",
+                  "    pm.expect(jsonData).to.have.property('user');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"fulano@mail.com\",\n    \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Faz login de um usuário existente"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para autenticação de usuários"
+    },
+    {
+      "name": "👤 Perfil do Usuário",
+      "item": [
+        {
+          "name": "Obter Perfil",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code é 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Resposta contém dados do usuário', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('user');",
+                  "    pm.expect(jsonData.user).to.have.property('id');",
+                  "    pm.expect(jsonData.user).to.have.property('email');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/user/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "profile"]
+            },
+            "description": "Obtém o perfil do usuário autenticado"
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Perfil",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Fulano Silva Santos\",\n    \"username\": \"fulano_atualizado\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "profile"]
+            },
+            "description": "Atualiza o perfil do usuário autenticado"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para gerenciamento do perfil do usuário"
+    },
+    {
+      "name": "📤 Upload de Arquivos",
+      "item": [
+        {
+          "name": "Upload de Imagem",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Salvar ID da imagem enviada",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.file && response.file.id) {",
+                  "        pm.collectionVariables.set('image_id', response.file.id);",
+                  "        console.log('ID da imagem salvo:', response.file.id);",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('Status code é 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Resposta contém informações do arquivo', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('file');",
+                  "    pm.expect(jsonData.file).to.have.property('id');",
+                  "    pm.expect(jsonData.file).to.have.property('url');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "",
+                  "description": "Selecione uma imagem PNG, JPG ou SVG (máx 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/upload/image",
+              "host": ["{{base_url}}"],
+              "path": ["api", "upload", "image"]
+            },
+            "description": "Faz upload de uma imagem para uso nos designs"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Imagens do Usuário",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/upload/user-images",
+              "host": ["{{base_url}}"],
+              "path": ["api", "upload", "user-images"]
+            },
+            "description": "Lista todas as imagens enviadas pelo usuário"
+          },
+          "response": []
+        },
+        {
+          "name": "Informações da Imagem",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/upload/info/{{image_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "upload", "info", "{{image_id}}"]
+            },
+            "description": "Obtém informações detalhadas de uma imagem específica"
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar Imagem",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/upload/{{image_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "upload", "{{image_id}}"]
+            },
+            "description": "Remove uma imagem do usuário"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para upload e gerenciamento de imagens"
+    },
+    {
+      "name": "👕 Designs de Camisetas",
+      "item": [
+        {
+          "name": "Salvar Design",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Salvar ID do design criado",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.tshirt && response.tshirt.id) {",
+                  "        pm.collectionVariables.set('design_id', response.tshirt.id);",
+                  "        console.log('ID do design salvo:', response.tshirt.id);",
+                  "    }",
+                  "}",
+                  "",
+                  "pm.test('Status code é 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Resposta contém dados do design', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('tshirt');",
+                  "    pm.expect(jsonData.tshirt).to.have.property('id');",
+                  "    pm.expect(jsonData.tshirt).to.have.property('config');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"color\": \"#ff0000\",\n    \"style\": \"crew-neck\",\n    \"text\": \"Camiseta do Fulano\",\n    \"textColor\": \"#ffffff\",\n    \"textSize\": 0.1,\n    \"name\": \"Design do Fulano\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tshirt/save",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tshirt", "save"]
+            },
+            "description": "Salva um novo design de camiseta"
+          },
+          "response": []
+        },
+        {
+          "name": "Meus Designs",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tshirt/my-designs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tshirt", "my-designs"]
+            },
+            "description": "Lista todos os designs criados pelo usuário"
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Design por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tshirt/{{design_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tshirt", "{{design_id}}"]
+            },
+            "description": "Obtém um design específico pelo ID (público)"
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Design",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"color\": \"#00ff00\",\n    \"style\": \"v-neck\",\n    \"text\": \"Fulano Editado\",\n    \"textColor\": \"#000000\",\n    \"textSize\": 0.15,\n    \"name\": \"Design do Fulano v2\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tshirt/{{design_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tshirt", "{{design_id}}"]
+            },
+            "description": "Atualiza um design existente"
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar Design",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tshirt/{{design_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tshirt", "{{design_id}}"]
+            },
+            "description": "Remove um design do usuário"
+          },
+          "response": []
+        },
+        {
+          "name": "Duplicar Design",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tshirt/{{design_id}}/duplicate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tshirt", "{{design_id}}", "duplicate"]
+            },
+            "description": "Cria uma cópia de um design existente"
+          },
+          "response": []
+        },
+        {
+          "name": "Galeria Pública",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tshirt/public/gallery",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tshirt", "public", "gallery"]
+            },
+            "description": "Lista designs públicos na galeria"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para criação e gerenciamento de designs de camisetas"
+    },
+    {
+      "name": "🧪 Testes Avançados",
+      "item": [
+        {
+          "name": "Design com Logo Personalizado",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Design Premium do Fulano\",\n    \"color\": \"#0066cc\",\n    \"style\": \"crew-neck\",\n    \"text\": \"Fulano Store\",\n    \"textColor\": \"#ffffff\",\n    \"textSize\": 0.12,\n    \"textPosition\": {\n        \"x\": 0,\n        \"y\": -0.2\n    },\n    \"logo\": \"/uploads/logo-fulano.png\",\n    \"logoPosition\": {\n        \"x\": 0,\n        \"y\": 0.1\n    },\n    \"logoScale\": 0.8,\n    \"modelType\": \"procedural\",\n    \"renderQuality\": \"high\",\n    \"isPublic\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tshirt/save",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tshirt", "save"]
+            },
+            "description": "Cria um design avançado com logo e posicionamento personalizado"
+          },
+          "response": []
+        },
+        {
+          "name": "Teste de Validação - Dados Inválidos",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"color\": \"vermelho\",\n    \"style\": \"estilo-inexistente\",\n    \"textSize\": 2.0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tshirt/save",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tshirt", "save"]
+            },
+            "description": "Testa a validação com dados inválidos (deve retornar erro 400)"
+          },
+          "response": []
+        },
+        {
+          "name": "Teste sem Autenticação",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tshirt/my-designs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tshirt", "my-designs"]
+            },
+            "description": "Testa acesso a endpoint protegido sem token (deve retornar erro 401)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Testes avançados para validação e casos especiais"
+    }
+  ]
+}
