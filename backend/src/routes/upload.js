@@ -27,12 +27,12 @@ const storage = multer.diskStorage({
 
 // File filter
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = (process.env.ALLOWED_FILE_TYPES || 'image/jpeg,image/png,image/svg+xml').split(',');
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/svg+xml'];
   
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error(`Invalid file type. Allowed types: ${allowedTypes.join(', ')}`), false);
+    cb(new Error('Formato não suportado. Use .png, .jpg ou .svg.'), false);
   }
 };
 
@@ -51,8 +51,8 @@ router.post('/image', authenticateToken, upload.single('image'), async (req, res
   try {
     if (!req.file) {
       return res.status(400).json({
-        error: 'No file uploaded',
-        message: 'Please select an image file to upload'
+        error: 'Nenhum arquivo enviado',
+        message: 'Por favor, selecione um arquivo de imagem para enviar'
       });
     }
 
@@ -83,7 +83,7 @@ router.post('/image', authenticateToken, upload.single('image'), async (req, res
     await fs.writeFile(uploadsFile, JSON.stringify(uploads, null, 2));
 
     res.status(201).json({
-      message: 'File uploaded successfully',
+      message: 'Arquivo enviado com sucesso',
       file: {
         id: fileInfo.id,
         url: fileInfo.url,
@@ -105,9 +105,17 @@ router.post('/image', authenticateToken, upload.single('image'), async (req, res
       }
     }
 
+    // Handle specific error types
+    let errorMessage = error.message || 'Erro ao enviar arquivo';
+    
+    // Check if it's a file format error
+    if (error.message && error.message.includes('Formato não suportado')) {
+      errorMessage = 'Formato não suportado. Use .png, .jpg ou .svg.';
+    }
+
     res.status(500).json({
-      error: 'Upload failed',
-      message: error.message || 'Error uploading file'
+      error: 'Falha no envio',
+      message: errorMessage
     });
   }
 });
@@ -144,8 +152,8 @@ router.get('/user-images', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching user images:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error fetching user images'
+      error: 'Erro do servidor',
+      message: 'Erro ao buscar imagens do usuário'
     });
   }
 });
@@ -166,8 +174,8 @@ router.delete('/:imageId', authenticateToken, async (req, res) => {
     
     if (uploadIndex === -1) {
       return res.status(404).json({
-        error: 'Image not found',
-        message: 'Image not found or you do not have permission to delete it'
+        error: 'Imagem não encontrada',
+        message: 'Imagem não encontrada ou você não tem permissão para excluí-la'
       });
     }
 
@@ -186,14 +194,14 @@ router.delete('/:imageId', authenticateToken, async (req, res) => {
     await fs.writeFile(uploadsFile, JSON.stringify(uploads, null, 2));
 
     res.json({
-      message: 'Image deleted successfully'
+      message: 'Imagem excluída com sucesso'
     });
 
   } catch (error) {
     console.error('Error deleting image:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error deleting image'
+      error: 'Erro do servidor',
+      message: 'Erro ao excluir imagem'
     });
   }
 });
@@ -213,8 +221,8 @@ router.get('/info/:imageId', authenticateToken, async (req, res) => {
     
     if (!upload) {
       return res.status(404).json({
-        error: 'Image not found',
-        message: 'Image not found or you do not have permission to access it'
+        error: 'Imagem não encontrada',
+        message: 'Imagem não encontrada ou você não tem permissão para acessá-la'
       });
     }
 
@@ -232,8 +240,8 @@ router.get('/info/:imageId', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching image info:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error fetching image information'
+      error: 'Erro do servidor',
+      message: 'Erro ao buscar informações da imagem'
     });
   }
 });

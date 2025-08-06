@@ -33,21 +33,21 @@ router.post('/register', [
   body('email')
     .isEmail()
     .normalizeEmail()
-    .withMessage('Please provide a valid email'),
+    .withMessage('Por favor, forneça um email válido'),
   body('password')
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
+    .withMessage('A senha deve ter pelo menos 6 caracteres'),
   body('name')
     .trim()
     .isLength({ min: 2 })
-    .withMessage('Name must be at least 2 characters long')
+    .withMessage('O nome deve ter pelo menos 2 caracteres')
 ], async (req, res) => {
   try {
     // Check validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
-        error: 'Validation failed',
+        error: 'Falha na validação',
         details: errors.array()
       });
     }
@@ -61,8 +61,8 @@ router.post('/register', [
     const existingUser = users.find(user => user.email === email);
     if (existingUser) {
       return res.status(409).json({
-        error: 'User already exists',
-        message: 'A user with this email already exists'
+        error: 'Usuário já existe',
+        message: 'Um usuário com este email já existe'
       });
     }
 
@@ -97,14 +97,15 @@ router.post('/register', [
     );
 
     res.status(201).json({
-      message: 'User registered successfully',
-      token,
+      message: 'Usuário registrado com sucesso',
       user: {
         id: newUser.id,
         email: newUser.email,
         name: newUser.name,
-        role: newUser.role
-      }
+        role: newUser.role,
+        createdAt: newUser.createdAt
+      },
+      token
     });
 
   } catch (error) {

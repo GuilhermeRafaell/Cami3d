@@ -29,30 +29,60 @@ const writeTshirts = async (tshirts) => {
 const tshirtValidation = [
   body('color')
     .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
-    .withMessage('Color must be a valid hex color code'),
+    .withMessage('A cor deve ser um código hexadecimal válido'),
   body('style')
     .isIn(['crew-neck', 'v-neck', 'tank-top', 'long-sleeve'])
-    .withMessage('Style must be one of: crew-neck, v-neck, tank-top, long-sleeve'),
+    .withMessage('O estilo deve ser um dos seguintes: crew-neck, v-neck, tank-top, long-sleeve'),
   body('modelType')
     .optional()
     .isIn(['procedural', 'external'])
-    .withMessage('Model type must be procedural or external'),
+    .withMessage('O tipo de modelo deve ser procedural ou external'),
   body('text')
     .optional()
     .isLength({ max: 50 })
-    .withMessage('Text must not exceed 50 characters'),
+    .withMessage('O texto não deve exceder 50 caracteres'),
   body('textColor')
     .optional()
     .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
-    .withMessage('Text color must be a valid hex color code'),
+    .withMessage('A cor do texto deve ser um código hexadecimal válido'),
   body('textSize')
     .optional()
     .isFloat({ min: 0.05, max: 0.5 })
-    .withMessage('Text size must be between 0.05 and 0.5'),
+    .withMessage('O tamanho do texto deve estar entre 0.05 e 0.5'),
   body('logoScale')
     .optional()
     .isFloat({ min: 0.1, max: 3.0 })
-    .withMessage('Logo scale must be between 0.1 and 3.0')
+    .withMessage('A escala do logo deve estar entre 0.1 e 3.0'),
+  // Custom validation for required elements
+  body()
+    .custom((body) => {
+      const hasText = body.text && body.text.trim().length > 0;
+      const hasLogo = body.logo && body.logo.trim().length > 0;
+      
+      if (!hasText && !hasLogo) {
+        throw new Error('Adicione ao menos um elemento para finalizar sua camiseta.');
+      }
+      return true;
+    }),
+  // Custom validation for elements limit
+  body()
+    .custom((body) => {
+      const elements = [];
+      
+      if (body.text && body.text.trim().length > 0) {
+        elements.push('text');
+      }
+      if (body.logo && body.logo.trim().length > 0) {
+        elements.push('logo');
+      }
+      // Add other element types if they exist in the future
+      
+      const maxElements = 5; // Define maximum number of elements
+      if (elements.length > maxElements) {
+        throw new Error('Limite de elementos excedido. Remova alguns itens antes de continuar.');
+      }
+      return true;
+    })
 ];
 
 // POST /api/tshirt/save
@@ -62,7 +92,7 @@ router.post('/save', authenticateToken, tshirtValidation, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
-        error: 'Validation failed',
+        error: 'Falha na validação',
         details: errors.array()
       });
     }
@@ -115,7 +145,7 @@ router.post('/save', authenticateToken, tshirtValidation, async (req, res) => {
     await writeTshirts(tshirts);
 
     res.status(201).json({
-      message: 'T-shirt design saved successfully',
+      message: 'Design da camiseta salvo com sucesso',
       tshirt: {
         id: newTshirt.id,
         name: newTshirt.name,
@@ -127,8 +157,8 @@ router.post('/save', authenticateToken, tshirtValidation, async (req, res) => {
   } catch (error) {
     console.error('Save t-shirt error:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error saving t-shirt design'
+      error: 'Erro do servidor',
+      message: 'Erro ao salvar o design da camiseta'
     });
   }
 });
@@ -158,8 +188,8 @@ router.get('/my-designs', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Fetch designs error:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error fetching designs'
+      error: 'Erro do servidor',
+      message: 'Erro ao buscar designs'
     });
   }
 });
@@ -174,8 +204,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
     
     if (!tshirt) {
       return res.status(404).json({
-        error: 'Design not found',
-        message: 'T-shirt design not found'
+        error: 'Design não encontrado',
+        message: 'Design da camiseta não encontrado'
       });
     }
 
@@ -185,8 +215,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
     
     if (!canAccess) {
       return res.status(403).json({
-        error: 'Access denied',
-        message: 'You do not have permission to view this design'
+        error: 'Acesso negado',
+        message: 'Você não tem permissão para visualizar este design'
       });
     }
 
@@ -203,8 +233,8 @@ router.get('/:id', optionalAuth, async (req, res) => {
   } catch (error) {
     console.error('Fetch design error:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error fetching design'
+      error: 'Erro do servidor',
+      message: 'Erro ao buscar design'
     });
   }
 });
@@ -216,7 +246,7 @@ router.put('/:id', authenticateToken, tshirtValidation, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
-        error: 'Validation failed',
+        error: 'Falha na validação',
         details: errors.array()
       });
     }
@@ -230,8 +260,8 @@ router.put('/:id', authenticateToken, tshirtValidation, async (req, res) => {
     
     if (tshirtIndex === -1) {
       return res.status(404).json({
-        error: 'Design not found',
-        message: 'T-shirt design not found or you do not have permission to edit it'
+        error: 'Design não encontrado',
+        message: 'Design da camiseta não encontrado ou você não tem permissão para editá-lo'
       });
     }
 
@@ -251,7 +281,7 @@ router.put('/:id', authenticateToken, tshirtValidation, async (req, res) => {
     await writeTshirts(tshirts);
 
     res.json({
-      message: 'Design updated successfully',
+      message: 'Design atualizado com sucesso',
       design: {
         id: tshirts[tshirtIndex].id,
         name: tshirts[tshirtIndex].name,
@@ -263,8 +293,8 @@ router.put('/:id', authenticateToken, tshirtValidation, async (req, res) => {
   } catch (error) {
     console.error('Update design error:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error updating design'
+      error: 'Erro do servidor',
+      message: 'Erro ao atualizar design'
     });
   }
 });
@@ -281,8 +311,8 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     
     if (tshirtIndex === -1) {
       return res.status(404).json({
-        error: 'Design not found',
-        message: 'T-shirt design not found or you do not have permission to delete it'
+        error: 'Design não encontrado',
+        message: 'Design da camiseta não encontrado ou você não tem permissão para excluí-lo'
       });
     }
 
@@ -291,14 +321,14 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     await writeTshirts(tshirts);
 
     res.json({
-      message: 'Design deleted successfully'
+      message: 'Design excluído com sucesso'
     });
 
   } catch (error) {
     console.error('Delete design error:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error deleting design'
+      error: 'Erro do servidor',
+      message: 'Erro ao excluir design'
     });
   }
 });
@@ -313,8 +343,8 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
     
     if (!originalTshirt) {
       return res.status(404).json({
-        error: 'Design not found',
-        message: 'Original design not found'
+        error: 'Design não encontrado',
+        message: 'Design original não encontrado'
       });
     }
 
@@ -323,8 +353,8 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
     
     if (!canAccess) {
       return res.status(403).json({
-        error: 'Access denied',
-        message: 'You do not have permission to duplicate this design'
+        error: 'Acesso negado',
+        message: 'Você não tem permissão para duplicar este design'
       });
     }
 
@@ -332,7 +362,7 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
     const duplicatedTshirt = {
       id: uuidv4(),
       userId: req.user.id,
-      name: `${originalTshirt.name} (Copy)`,
+      name: `${originalTshirt.name} (Cópia)`,
       config: { ...originalTshirt.config },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -343,7 +373,7 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
     await writeTshirts(tshirts);
 
     res.status(201).json({
-      message: 'Design duplicated successfully',
+      message: 'Design duplicado com sucesso',
       design: {
         id: duplicatedTshirt.id,
         name: duplicatedTshirt.name,
@@ -355,8 +385,8 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Duplicate design error:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error duplicating design'
+      error: 'Erro do servidor',
+      message: 'Erro ao duplicar design'
     });
   }
 });
@@ -395,8 +425,8 @@ router.get('/public/gallery', async (req, res) => {
   } catch (error) {
     console.error('Fetch gallery error:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error fetching public gallery'
+      error: 'Erro do servidor',
+      message: 'Erro ao buscar galeria pública'
     });
   }
 });
