@@ -46,6 +46,69 @@ const upload = multer({
   }
 });
 
+/**
+ * @swagger
+ * /api/upload/image:
+ *   post:
+ *     summary: Fazer upload de imagem
+ *     description: Faz upload de arquivo de imagem para uso em designs de camiseta
+ *     tags: [Uploads]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - image
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: Arquivo de imagem (.png, .jpg, .jpeg, .svg) - máximo 5MB
+ *     responses:
+ *       200:
+ *         description: Upload realizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Upload realizado com sucesso
+ *                 file:
+ *                   $ref: '#/components/schemas/Upload'
+ *       400:
+ *         description: Erro de validação do arquivo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   enum:
+ *                     - Nenhum arquivo foi enviado
+ *                     - Formato não suportado. Use .png, .jpg ou .svg.
+ *                     - Arquivo muito grande. Tamanho máximo é 5MB
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       413:
+ *         description: Arquivo muito grande
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Arquivo muito grande. Tamanho máximo é 5MB
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 // POST /api/upload/image
 router.post('/image', authenticateToken, upload.single('image'), async (req, res) => {
   try {

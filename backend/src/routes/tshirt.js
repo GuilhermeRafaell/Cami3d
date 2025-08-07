@@ -85,6 +85,34 @@ const tshirtValidation = [
     })
 ];
 
+/**
+ * @swagger
+ * /api/tshirt/save:
+ *   post:
+ *     summary: Salvar design
+ *     tags: [T-Shirts]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [color, style]
+ *             properties:
+ *               color: { type: string, example: '#FF0000' }
+ *               style: { type: string, enum: [crew-neck, v-neck, tank-top, long-sleeve] }
+ *               name: { type: string }
+ *               text: { type: string }
+ *     responses:
+ *       201:
+ *         description: Design salvo
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Não autorizado
+ */
 // POST /api/tshirt/save
 router.post('/save', authenticateToken, tshirtValidation, async (req, res) => {
   try {
@@ -163,6 +191,55 @@ router.post('/save', authenticateToken, tshirtValidation, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/tshirt/my-designs:
+ *   get:
+ *     summary: Listar meus designs
+ *     description: Retorna todos os designs de camisetas do usuário autenticado
+ *     tags: [T-Shirts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Itens por página
+ *     responses:
+ *       200:
+ *         description: Lista de designs recuperada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 tshirts:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/TshirtDesign'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page: { type: integer, example: 1 }
+ *                     limit: { type: integer, example: 10 }
+ *                     total: { type: integer, example: 25 }
+ *                     pages: { type: integer, example: 3 }
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 // GET /api/tshirt/my-designs
 router.get('/my-designs', authenticateToken, async (req, res) => {
   try {
@@ -194,6 +271,47 @@ router.get('/my-designs', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/tshirt/{id}:
+ *   get:
+ *     summary: Obter design por ID
+ *     description: Retorna um design específico de camiseta por ID
+ *     tags: [T-Shirts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do design de camiseta
+ *     responses:
+ *       200:
+ *         description: Design encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 tshirt:
+ *                   $ref: '#/components/schemas/TshirtDesign'
+ *       404:
+ *         description: Design não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Design não encontrado
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 // GET /api/tshirt/:id
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
@@ -391,6 +509,69 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/tshirt/public/gallery:
+ *   get:
+ *     summary: Galeria pública
+ *     description: Retorna designs públicos para a galeria
+ *     tags: [T-Shirts]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 20
+ *         description: Itens por página
+ *       - in: query
+ *         name: color
+ *         schema:
+ *           type: string
+ *         description: Filtrar por cor
+ *       - in: query
+ *         name: style
+ *         schema:
+ *           type: string
+ *           enum: [crew-neck, v-neck, tank-top, long-sleeve]
+ *         description: Filtrar por estilo
+ *     responses:
+ *       200:
+ *         description: Galeria carregada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 designs:
+ *                   type: array
+ *                   items:
+ *                     allOf:
+ *                       - $ref: '#/components/schemas/TshirtDesign'
+ *                       - type: object
+ *                         properties:
+ *                           user:
+ *                             type: object
+ *                             properties:
+ *                               username: { type: string, example: fulano }
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page: { type: integer, example: 1 }
+ *                     limit: { type: integer, example: 20 }
+ *                     total: { type: integer, example: 150 }
+ *                     pages: { type: integer, example: 8 }
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 // GET /api/tshirt/public/gallery
 router.get('/public/gallery', async (req, res) => {
   try {

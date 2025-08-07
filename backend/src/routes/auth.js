@@ -28,6 +28,31 @@ const writeUsers = async (users) => {
   await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
 };
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Registrar usuário
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, name]
+ *             properties:
+ *               email: { type: string, format: email }
+ *               password: { type: string, minLength: 6 }
+ *               name: { type: string, minLength: 2 }
+ *     responses:
+ *       201:
+ *         description: Usuário criado
+ *       400:
+ *         description: Dados inválidos
+ *       409:
+ *         description: Email já existe
+ */
 // POST /api/auth/register
 router.post('/register', [
   body('email')
@@ -117,6 +142,30 @@ router.post('/register', [
   }
 });
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Fazer login
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email: { type: string, format: email }
+ *               password: { type: string }
+ *     responses:
+ *       200:
+ *         description: Login realizado
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Credenciais incorretas
+ */
 // POST /api/auth/login
 router.post('/login', [
   body('email')
