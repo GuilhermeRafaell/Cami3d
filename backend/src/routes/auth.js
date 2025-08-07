@@ -268,6 +268,7 @@ router.post('/verify-token', authenticateToken, async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Token verification error:', error);
     res.status(500).json({
       error: 'Erro do servidor',
       message: 'Erro ao verificar token'
@@ -294,6 +295,7 @@ router.post('/refresh-token', authenticateToken, (req, res) => {
       token
     });
   } catch (error) {
+    console.error('Token refresh error:', error);
     res.status(500).json({
       error: 'Erro do servidor',
       message: 'Erro ao renovar token'

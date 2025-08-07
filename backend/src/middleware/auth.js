@@ -5,7 +5,7 @@ const path = require('path');
 // Middleware para verificar JWT token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  const token = authHeader?.split(' ')[1]; // Bearer TOKEN
 
   if (!token) {
     return res.status(401).json({
@@ -30,7 +30,7 @@ const authenticateToken = (req, res, next) => {
 // Middleware opcional - continua mesmo sem token válido
 const optionalAuth = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader?.split(' ')[1];
 
   if (token) {
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
@@ -59,6 +59,7 @@ const requireAdmin = async (req, res, next) => {
     
     next();
   } catch (error) {
+    console.error('Erro ao verificar permissões do usuário:', error);
     res.status(500).json({
       error: 'Erro do servidor',
       message: 'Erro ao verificar permissões do usuário'

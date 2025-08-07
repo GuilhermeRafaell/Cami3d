@@ -140,6 +140,9 @@ router.post('/image', authenticateToken, upload.single('image'), async (req, res
       uploads = JSON.parse(data);
     } catch (error) {
       // File doesn't exist yet, start with empty array
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
     }
 
     uploads.push(fileInfo);
@@ -172,7 +175,7 @@ router.post('/image', authenticateToken, upload.single('image'), async (req, res
     let errorMessage = error.message || 'Erro ao enviar arquivo';
     
     // Check if it's a file format error
-    if (error.message && error.message.includes('Formato não suportado')) {
+    if (error.message?.includes('Formato não suportado')) {
       errorMessage = 'Formato não suportado. Use .png, .jpg ou .svg.';
     }
 
@@ -208,8 +211,12 @@ router.get('/user-images', authenticateToken, async (req, res) => {
         }))
       });
     } catch (error) {
-      // No uploads file exists yet
-      res.json({ uploads: [] });
+      // Only handle file not found error, otherwise rethrow
+      if (error.code === 'ENOENT') {
+        res.json({ uploads: [] });
+      } else {
+        throw error;
+      }
     }
 
   } catch (error) {

@@ -529,6 +529,9 @@ router.get('/stats', authenticateToken, async (req, res) => {
       const tshirts = JSON.parse(tshirtsData);
       userTshirts = tshirts.filter(t => t.userId === req.user.id);
     } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
       // No t-shirts file exists yet
     }
 
