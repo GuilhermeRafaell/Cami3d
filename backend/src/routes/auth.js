@@ -136,8 +136,8 @@ router.post('/register', [
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error creating user account'
+      error: 'Erro do servidor',
+      message: 'Erro ao criar conta do usuário'
     });
   }
 });
@@ -181,7 +181,7 @@ router.post('/login', [
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
-        error: 'Validation failed',
+        error: 'Falha na validação',
         details: errors.array()
       });
     }
@@ -195,8 +195,8 @@ router.post('/login', [
     const user = users.find(u => u.email === email);
     if (!user) {
       return res.status(401).json({
-        error: 'Invalid credentials',
-        message: 'Email or password is incorrect'
+        error: 'Credenciais inválidas',
+        message: 'Email ou senha incorretos'
       });
     }
 
@@ -204,8 +204,8 @@ router.post('/login', [
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({
-        error: 'Invalid credentials',
-        message: 'Email or password is incorrect'
+        error: 'Credenciais inválidas',
+        message: 'Email ou senha incorretos'
       });
     }
 
@@ -239,8 +239,8 @@ router.post('/login', [
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error during login'
+      error: 'Erro do servidor',
+      message: 'Erro durante o login'
     });
   }
 });
@@ -253,8 +253,8 @@ router.post('/verify-token', authenticateToken, async (req, res) => {
     
     if (!user) {
       return res.status(404).json({
-        error: 'User not found',
-        message: 'User associated with this token no longer exists'
+        error: 'Usuário não encontrado',
+        message: 'Usuário associado a este token não existe mais'
       });
     }
 
@@ -269,8 +269,8 @@ router.post('/verify-token', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error verifying token'
+      error: 'Erro do servidor',
+      message: 'Erro ao verificar token'
     });
   }
 });
@@ -295,8 +295,8 @@ router.post('/refresh-token', authenticateToken, (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error refreshing token'
+      error: 'Erro do servidor',
+      message: 'Erro ao renovar token'
     });
   }
 });

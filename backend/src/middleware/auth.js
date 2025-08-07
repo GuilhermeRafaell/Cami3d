@@ -9,16 +9,16 @@ const authenticateToken = (req, res, next) => {
 
   if (!token) {
     return res.status(401).json({
-      error: 'Access denied',
-      message: 'No token provided'
+      error: 'Acesso negado',
+      message: 'Token não fornecido'
     });
   }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
       return res.status(403).json({
-        error: 'Invalid token',
-        message: 'Token is not valid or has expired'
+        error: 'Token inválido',
+        message: 'Token não é válido ou expirou'
       });
     }
     
@@ -52,16 +52,16 @@ const requireAdmin = async (req, res, next) => {
     
     if (!user || user.role !== 'admin') {
       return res.status(403).json({
-        error: 'Access denied',
-        message: 'Admin privileges required'
+        error: 'Acesso negado',
+        message: 'Privilégios de administrador necessários'
       });
     }
     
     next();
   } catch (error) {
     res.status(500).json({
-      error: 'Server error',
-      message: 'Error checking user permissions'
+      error: 'Erro do servidor',
+      message: 'Erro ao verificar permissões do usuário'
     });
   }
 };

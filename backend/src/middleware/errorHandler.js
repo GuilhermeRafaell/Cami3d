@@ -10,53 +10,53 @@ const errorHandler = (err, req, res, next) => {
   // Multer errors
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({
-      error: 'File too large',
-      message: 'The uploaded file exceeds the maximum allowed size of 5MB'
+      error: 'Arquivo muito grande',
+      message: 'O arquivo enviado excede o tamanho máximo permitido de 5MB'
     });
   }
 
   if (err.code === 'LIMIT_FILE_COUNT') {
     return res.status(400).json({
-      error: 'Too many files',
-      message: 'Maximum of 1 file allowed per upload'
+      error: 'Muitos arquivos',
+      message: 'Máximo de 1 arquivo permitido por upload'
     });
   }
 
   if (err.code === 'LIMIT_UNEXPECTED_FILE') {
     return res.status(400).json({
-      error: 'Invalid file field',
-      message: 'Unexpected file field name'
+      error: 'Campo de arquivo inválido',
+      message: 'Nome do campo de arquivo inesperado'
     });
   }
 
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({
-      error: 'Invalid token',
-      message: 'The provided token is malformed'
+      error: 'Token inválido',
+      message: 'O token fornecido está malformado'
     });
   }
 
   if (err.name === 'TokenExpiredError') {
     return res.status(401).json({
-      error: 'Token expired',
-      message: 'The provided token has expired'
+      error: 'Token expirado',
+      message: 'O token fornecido expirou'
     });
   }
 
   // Validation errors
   if (err.name === 'ValidationError') {
     return res.status(400).json({
-      error: 'Validation error',
+      error: 'Erro de validação',
       message: err.message
     });
   }
 
   // Default error
   res.status(err.status || 500).json({
-    error: err.name || 'Server Error',
+    error: err.name || 'Erro do Servidor',
     message: process.env.NODE_ENV === 'production' 
-      ? 'Something went wrong on our end' 
+      ? 'Algo deu errado do nosso lado' 
       : err.message,
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
