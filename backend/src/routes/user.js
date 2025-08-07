@@ -544,6 +544,9 @@ router.get('/stats', authenticateToken, async (req, res) => {
       const uploads = JSON.parse(uploadsData);
       userUploads = uploads.filter(u => u.uploadedBy === req.user.id);
     } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
       // No uploads file exists yet
     }
 
