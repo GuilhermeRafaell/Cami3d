@@ -16,21 +16,7 @@
       }
     ]
   },
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "// Pre-request script para configurações globais",
-          "pm.request.headers.add({",
-          "    key: 'Content-Type',",
-          "    value: 'application/json'",
-          "});"
-        ]
-      }
-    }
-  ],
+  "event": [],
   "variable": [
     {
       "key": "base_url",
@@ -181,6 +167,29 @@
             "description": "Faz login de um usuário existente"
           },
           "response": []
+        },
+        {
+          "name": "Recuperação de Senha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"fulano@mail.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "forgot-password"]
+            },
+            "description": "Solicita recuperação de senha por email"
+          },
+          "response": []
         }
       ],
       "description": "Endpoints para autenticação de usuários"
@@ -264,6 +273,96 @@
             "description": "Atualiza o perfil do usuário autenticado"
           },
           "response": []
+        },
+        {
+          "name": "Alterar Senha",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"currentPassword\": \"123456\",\n    \"newPassword\": \"novasenha123\",\n    \"confirmPassword\": \"novasenha123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "change-password"]
+            },
+            "description": "Altera a senha do usuário autenticado"
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar Conta",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/account",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "account"]
+            },
+            "description": "Remove permanentemente a conta do usuário"
+          },
+          "response": []
+        },
+        {
+          "name": "Estatísticas do Usuário",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/user/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "stats"]
+            },
+            "description": "Retorna estatísticas detalhadas sobre a atividade do usuário"
+          },
+          "response": []
         }
       ],
       "description": "Endpoints para gerenciamento do perfil do usuário"
@@ -278,13 +377,44 @@
               "listen": "test",
               "script": {
                 "exec": [
+                  "// Verificar se há arquivo anexado",
+                  "const request = pm.request.body;",
+                  "let hasFile = false;",
+                  "",
+                  "if (request && request.formdata) {",
+                  "    const imageField = request.formdata.find(field => field.key === 'image');",
+                  "    hasFile = imageField && imageField.src && imageField.src.length > 0;",
+                  "}",
+                  "",
+                  "if (!hasFile) {",
+                  "    console.log('❌ ERRO: Nenhum arquivo foi anexado ao campo image');",
+                  "    console.log('📋 INSTRUÇÕES:');",
+                  "    console.log('1. Vá para Body → form-data');",
+                  "    console.log('2. Campo \"image\" deve ser tipo \"File\"');",
+                  "    console.log('3. Clique em \"Select Files\" e escolha uma imagem');",
+                  "    pm.test.skip('Teste pulado - arquivo não anexado');",
+                  "    return;",
+                  "}",
+                  "",
+                  "// Verificar token",
+                  "const token = pm.collectionVariables.get('jwt_token');",
+                  "if (!token) {",
+                  "    console.log('❌ ERRO: Token JWT não encontrado');",
+                  "    console.log('📋 Faça login primeiro no endpoint \"Login Usuário\"');",
+                  "    pm.test.skip('Teste pulado - sem token');",
+                  "    return;",
+                  "}",
+                  "",
                   "// Salvar ID da imagem enviada",
                   "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
                   "    if (response.file && response.file.id) {",
                   "        pm.collectionVariables.set('image_id', response.file.id);",
-                  "        console.log('ID da imagem salvo:', response.file.id);",
+                  "        console.log('✅ ID da imagem salvo:', response.file.id);",
                   "    }",
+                  "} else {",
+                  "    console.log('❌ Upload failed. Status:', pm.response.code);",
+                  "    console.log('📄 Response:', pm.response.text());",
                   "}",
                   "",
                   "pm.test('Status code é 201', function () {",
@@ -292,10 +422,12 @@
                   "});",
                   "",
                   "pm.test('Resposta contém informações do arquivo', function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData).to.have.property('file');",
-                  "    pm.expect(jsonData.file).to.have.property('id');",
-                  "    pm.expect(jsonData.file).to.have.property('url');",
+                  "    if (pm.response.code === 201) {",
+                  "        const jsonData = pm.response.json();",
+                  "        pm.expect(jsonData).to.have.property('file');",
+                  "        pm.expect(jsonData.file).to.have.property('id');",
+                  "        pm.expect(jsonData.file).to.have.property('url');",
+                  "    }",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -322,7 +454,7 @@
                   "key": "image",
                   "type": "file",
                   "src": "",
-                  "description": "Selecione uma imagem PNG, JPG ou SVG (máx 5MB)"
+                  "description": "⚠️ IMPORTANTE: Clique em 'Select Files' e escolha uma imagem PNG, JPG ou SVG (máx 5MB). Use a test-image.png do projeto se quiser."
                 }
               ]
             },
@@ -332,78 +464,6 @@
               "path": ["api", "upload", "image"]
             },
             "description": "Faz upload de uma imagem para uso nos designs"
-          },
-          "response": []
-        },
-        {
-          "name": "Listar Imagens do Usuário",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/upload/user-images",
-              "host": ["{{base_url}}"],
-              "path": ["api", "upload", "user-images"]
-            },
-            "description": "Lista todas as imagens enviadas pelo usuário"
-          },
-          "response": []
-        },
-        {
-          "name": "Informações da Imagem",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/upload/info/{{image_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "upload", "info", "{{image_id}}"]
-            },
-            "description": "Obtém informações detalhadas de uma imagem específica"
-          },
-          "response": []
-        },
-        {
-          "name": "Deletar Imagem",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/upload/{{image_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "upload", "{{image_id}}"]
-            },
-            "description": "Remove uma imagem do usuário"
           },
           "response": []
         }
@@ -510,87 +570,6 @@
               "path": ["api", "tshirt", "{{design_id}}"]
             },
             "description": "Obtém um design específico pelo ID (público)"
-          },
-          "response": []
-        },
-        {
-          "name": "Atualizar Design",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"color\": \"#00ff00\",\n    \"style\": \"v-neck\",\n    \"text\": \"Fulano Editado\",\n    \"textColor\": \"#000000\",\n    \"textSize\": 0.15,\n    \"name\": \"Design do Fulano v2\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/tshirt/{{design_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "tshirt", "{{design_id}}"]
-            },
-            "description": "Atualiza um design existente"
-          },
-          "response": []
-        },
-        {
-          "name": "Deletar Design",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/tshirt/{{design_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "tshirt", "{{design_id}}"]
-            },
-            "description": "Remove um design do usuário"
-          },
-          "response": []
-        },
-        {
-          "name": "Duplicar Design",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwt_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/tshirt/{{design_id}}/duplicate",
-              "host": ["{{base_url}}"],
-              "path": ["api", "tshirt", "{{design_id}}", "duplicate"]
-            },
-            "description": "Cria uma cópia de um design existente"
           },
           "response": []
         },

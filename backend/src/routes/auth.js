@@ -303,4 +303,161 @@ router.post('/refresh-token', authenticateToken, (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Recuperação de senha
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200:
+ *         description: Email de recuperação enviado
+ *       404:
+ *         description: Email não encontrado
+ */
+// POST /api/auth/forgot-password  
+router.post('/forgot-password', [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email')
+], async (req, res) => {
+  try {
+    // Check validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Falha na validação',
+        details: errors.array()
+      });
+    }
+
+    const { email } = req.body;
+    const users = await readUsers();
+    
+    const user = users.find(u => u.email === email);
+    
+    // Sempre retornar sucesso por segurança (não revelar se email existe)
+    // Em um sistema real, seria enviado um email com token de reset
+    
+    if (user) {
+      // TODO: Implementar envio de email com token de reset
+      console.log(`Password reset requested for: ${email}`);
+    }
+
+    res.json({
+      message: 'Se o email existir, você receberá instruções para redefinir sua senha.'
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      error: 'Erro do servidor',
+      message: 'Erro ao processar solicitação de recuperação'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/verify-token:
+ *   post:
+ *     summary: Verificar token JWT
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token válido
+ *       401:
+ *         description: Token inválido ou expirado
+ */
+// POST /api/auth/verify-token
+router.post('/verify-token', authenticateToken, async (req, res) => {
+  try {
+    // Se chegou até aqui, o token é válido (middleware authenticateToken passou)
+    res.json({
+      valid: true,
+      user: {
+        id: req.user.id,
+        email: req.user.email,
+        role: req.user.role
+      }
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(500).json({
+      error: 'Erro do servidor',
+      message: 'Erro ao verificar token'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/refresh-token:
+ *   post:
+ *     summary: Renovar token JWT
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Novo token gerado
+ *       401:
+ *         description: Token inválido
+ */
+// POST /api/auth/refresh-token
+router.post('/refresh-token', authenticateToken, async (req, res) => {
+  try {
+    const users = await readUsers();
+    const user = users.find(u => u.id === req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        error: 'Usuário não encontrado',
+        message: 'Usuário associado ao token não existe mais'
+      });
+    }
+
+    // Gerar novo token
+    const newToken = jwt.sign(
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role 
+      },
+      process.env.JWT_SECRET || 'cami3d_secret_key',
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Token renovado com sucesso',
+      token: newToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(500).json({
+      error: 'Erro do servidor',
+      message: 'Erro ao renovar token'
+    });
+  }
+});
+
 module.exports = router;
