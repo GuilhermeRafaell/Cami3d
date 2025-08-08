@@ -14,6 +14,7 @@ const userRoutes = require('./src/routes/user');
 
 // Import middleware
 const errorHandler = require('./src/middleware/errorHandler');
+const { initStorage } = require('./src/middleware/initStorage');
 const { swaggerSpec, swaggerUi, swaggerUiOptions } = require('./src/config/swagger');
 
 const app = express();
@@ -49,9 +50,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files - serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Swagger Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 // Swagger JSON endpoint
 app.get('/api-docs.json', (req, res) => {
@@ -103,6 +101,9 @@ app.use('/api/tshirt', tshirtRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/user', userRoutes);
 
+// Swagger Documentation na rota raiz (depois das rotas da API)
+app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
@@ -115,11 +116,24 @@ app.use('*', (req, res) => {
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Cami3D Backend Server running on port ${PORT}`);
-  console.log(`📁 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-});
+const startServer = async () => {
+  try {
+    // Inicializar sistema de armazenamento
+    await initStorage();
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Cami3D Backend Server running on port ${PORT}`);
+      console.log(`📁 Environment: ${process.env.NODE_ENV}`);
+      console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/health`);
+      console.log(`📖 API Documentation: http://localhost:${PORT}/`);
+    });
+  } catch (error) {
+    console.error('❌ Falha ao iniciar servidor:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 module.exports = app;
