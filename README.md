@@ -23,24 +23,26 @@ Uma aplicação web moderna que permite a personalização completa de camisetas
 ## 📁 Estrutura do Projeto
 
 ```
-cami3d/
-├── public/
-│   └── vite.svg
-├── src/
-│   ├── components/
-│   │   ├── AuthModal.jsx      # Modal de autenticação
-│   │   ├── Home.jsx           # Página inicial
-│   │   ├── MainApp.jsx        # Aplicação principal
-│   │   ├── Modal.jsx          # Componente modal base
-│   │   └── TShirtOBJViewer.jsx # Visualizador 3D
-│   ├── assets/
-│   │   └── react.svg
-│   ├── App.jsx               # Componente raiz
-│   ├── main.jsx             # Ponto de entrada
-│   └── index.css            # Estilos globais
-├── index.html
-├── package.json
-└── vite.config.js
+Cami3d/
+├── backend/                 # API Backend (Node.js/Express)
+│   ├── src/
+│   │   ├── routes/         # Rotas da API
+│   │   ├── middleware/     # Middlewares de autenticação
+│   │   └── config/         # Configurações (Swagger, etc)
+│   ├── data/              # Arquivos de dados JSON
+│   └── uploads/           # Arquivos enviados pelos usuários
+├── cami3d/                # Frontend (React/Vite)
+│   ├── src/
+│   │   ├── components/    # Componentes React
+│   │   ├── utils/         # Utilitários (API client)
+│   │   └── assets/        # Recursos estáticos
+│   └── public/            # Arquivos públicos
+├── tests/                 # Scripts de teste
+│   ├── endpoints.sh       # Teste de endpoints da API
+│   └── README.md          # Documentação dos testes
+├── logs/                  # Logs do sistema
+├── *.sh                   # Scripts de gerenciamento
+└── test.sh               # Script principal de testes
 ```
 
 ## 🎯 Funcionalidades
@@ -68,35 +70,66 @@ cami3d/
 - Node.js (versão 16 ou superior)
 - npm ou yarn
 
-### Passos para execução
+### 🚀 Execução Rápida
 
-1. **Clone o repositório**
-   ```bash
-   git clone https://github.com/GuilhermeRafaell/Cami3d.git
-   cd Cami3d/cami3d
-   ```
+```bash
+# Clone o repositório
+git clone https://github.com/GuilhermeRafaell/Cami3d.git
+cd Cami3d
 
-2. **Instale as dependências**
-   ```bash
-   npm install
-   ```
+# Execute o script de configuração (instala dependências)
+./setup.sh
 
-3. **Execute o projeto**
-   ```bash
-   npm run dev
-   ```
+# Execute o projeto completo (backend + frontend)
+./start.sh
+```
 
-4. **Acesse a aplicação**
-   ```
-   http://localhost:5173
-   ```
+### 📋 Scripts de Gerenciamento
+
+- `./setup.sh` - Configura o projeto (instala dependências)
+- `./start.sh` - Inicia backend e frontend simultaneamente  
+- `./stop.sh` - Para todos os serviços
+- `./logs.sh` - Visualiza logs em tempo real
+- `./test.sh` - Executa suite de testes
+
+### 🧪 Executar Testes
+
+```bash
+# Executar todos os testes
+./test.sh all
+
+# Testar apenas endpoints da API
+./test.sh endpoints
+
+# Ver resultados dos testes
+./test.sh logs
+```
+
+### 🎯 Acessar a Aplicação
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:3001
+- **Documentação**: http://localhost:3001/ (Swagger)
 
 ## 📝 Scripts Disponíveis
 
-- `npm run dev` - Inicia o servidor de desenvolvimento
-- `npm run build` - Gera build de produção
-- `npm run preview` - Visualiza o build de produção
-- `npm run lint` - Executa verificação de código
+### Scripts de Gerenciamento
+- `./setup.sh` - Configuração inicial do projeto
+- `./start.sh` - Inicia backend e frontend
+- `./stop.sh` - Para todos os serviços  
+- `./logs.sh` - Visualiza logs do sistema
+- `./test.sh` - Suite de testes completa
+
+### Scripts do Frontend (cami3d/)
+- `npm run dev` - Servidor de desenvolvimento
+- `npm run build` - Build de produção
+- `npm run preview` - Preview do build
+- `npm run lint` - Verificação de código
+
+### Scripts do Backend (backend/)
+- `npm start` - Inicia servidor de produção
+- `npm run dev` - Servidor com hot-reload
+- `npm test` - Executa testes unitários
 
 ## 🎨 Capturas de Tela
 
