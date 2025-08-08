@@ -440,8 +440,32 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .viewer-controls p {
-  opacity: 0.7;
+  margin: 0;
+  color: #666;
   font-size: 0.85rem;
+}
+
+.saved-designs {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  max-width: 200px;
+}
+
+.saved-designs h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.saved-designs p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #666;
 }
 
 /* Modal */
@@ -498,6 +522,16 @@ input[type="range"]::-webkit-slider-thumb {
 /* Formulário de autenticação */
 .auth-form {
   padding: 1.5rem;
+}
+
+.error-general {
+  background: #fee;
+  color: #c53030;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  border: 1px solid #feb2b2;
 }
 
 .form-group {
@@ -557,6 +591,17 @@ input[type="range"]::-webkit-slider-thumb {
 .submit-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.upload-btn.uploading {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .forgot-password {

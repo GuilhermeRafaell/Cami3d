@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { X, User, Mail, Lock } from 'lucide-react'
+import { login, register, forgotPassword } from '../utils/api'
 
 function AuthModal({ onLogin, onClose }) {
   const [isLogin, setIsLogin] = useState(true)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -44,7 +46,7 @@ function AuthModal({ onLogin, onClose }) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
     if (showForgotPassword) {
@@ -53,8 +55,17 @@ function AuthModal({ onLogin, onClose }) {
         setErrors({ email: 'Email é obrigatório' })
         return
       }
-      alert('Email de recuperação enviado!')
-      setShowForgotPassword(false)
+      
+      setIsLoading(true)
+      try {
+        await forgotPassword(formData.email)
+        alert('Email de recuperação enviado!')
+        setShowForgotPassword(false)
+      } catch (error) {
+        setErrors({ email: error.message })
+      } finally {
+        setIsLoading(false)
+      }
       return
     }
     
@@ -62,14 +73,40 @@ function AuthModal({ onLogin, onClose }) {
       return
     }
 
-    // Simular autenticação
-    const userData = {
-      id: Math.random().toString(36).substr(2, 9),
-      email: formData.email,
-      name: formData.name || formData.email.split('@')[0]
-    }
+    setIsLoading(true)
+    setErrors({})
 
-    onLogin(userData)
+    try {
+      let response
+      
+      if (isLogin) {
+        // Login real
+        response = await login(formData.email, formData.password)
+      } else {
+        // Registro real
+        response = await register(formData.email, formData.password, formData.name)
+      }
+
+      // Salvar token no localStorage
+      localStorage.setItem('authToken', response.token)
+      
+      // Dados do usuário para o frontend
+      const userData = {
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.name,
+        token: response.token
+      }
+
+      onLogin(userData)
+    } catch (error) {
+      console.error('Authentication error:', error)
+      setErrors({ 
+        general: error.message || 'Erro na autenticação. Tente novamente.' 
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -85,6 +122,12 @@ function AuthModal({ onLogin, onClose }) {
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
+          {errors.general && (
+            <div className="error-general">
+              {errors.general}
+            </div>
+          )}
+          
           {showForgotPassword ? (
             // Formulário de recuperação de senha
             <div className="form-group">
@@ -170,8 +213,8 @@ function AuthModal({ onLogin, onClose }) {
             </>
           )}
 
-          <button type="submit" className="submit-btn">
-            {showForgotPassword ? 'Enviar' : (isLogin ? 'Entrar' : 'Cadastrar')}
+          <button type="submit" className="submit-btn" disabled={isLoading}>
+            {isLoading ? 'Processando...' : (showForgotPassword ? 'Enviar' : (isLogin ? 'Entrar' : 'Cadastrar'))}
           </button>
 
           {!showForgotPassword && (

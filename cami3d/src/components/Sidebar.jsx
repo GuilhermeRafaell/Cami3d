@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Upload, Palette, Type, RotateCcw, ShoppingCart, X } from 'lucide-react'
+import { uploadImage } from '../utils/api'
 
-function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido }) {
+function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido, userToken }) {
   const [activeTab, setActiveTab] = useState('design')
+  const [isUploading, setIsUploading] = useState(false)
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0]
     if (!file) return
 
@@ -15,9 +17,29 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido }) {
       return
     }
 
-    // Criar URL para preview
-    const logoUrl = URL.createObjectURL(file)
-    updateConfig({ logo: logoUrl })
+    // Verificar se usuário está logado
+    if (!userToken) {
+      alert('Você precisa estar logado para fazer upload de imagens')
+      return
+    }
+
+    setIsUploading(true)
+    
+    try {
+      // Upload real para o backend
+      const response = await uploadImage(file, userToken)
+      
+      // Usar a URL retornada pelo backend
+      const logoUrl = `http://localhost:3001${response.file.url}`
+      updateConfig({ logo: logoUrl })
+      
+      console.log('Upload realizado com sucesso:', response)
+    } catch (error) {
+      console.error('Erro no upload:', error)
+      alert(`Erro no upload: ${error.message}`)
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   const colors = [
@@ -64,9 +86,9 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido }) {
                   onChange={handleFileUpload}
                   style={{ display: 'none' }}
                 />
-                <label htmlFor="logo-upload" className="upload-btn">
+                <label htmlFor="logo-upload" className={`upload-btn ${isUploading ? 'uploading' : ''}`}>
                   <Upload size={16} />
-                  Carregar Imagem
+                  {isUploading ? 'Enviando...' : 'Carregar Imagem'}
                 </label>
                 {tshirtConfig.logo && (
                   <button 
