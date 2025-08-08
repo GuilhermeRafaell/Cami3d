@@ -98,8 +98,9 @@ if kill -0 $BACKEND_PID 2>/dev/null && kill -0 $FRONTEND_PID 2>/dev/null; then
     echo -e "${GREEN}🎉 Cami3D iniciado com sucesso!${NC}"
     echo
     echo -e "${BLUE}📱 URLs:${NC}"
-    echo -e "   Frontend: ${YELLOW}http://localhost:5173${NC}"
+    echo -e "   Frontend: ${YELLOW}http://localhost:5173${NC} (ou próxima porta disponível)"
     echo -e "   Backend:  ${YELLOW}http://localhost:3001${NC}"
+    echo -e "   API Docs: ${YELLOW}http://localhost:3001/${NC}"
     echo
     echo -e "${BLUE}💡 Comandos úteis:${NC}"
     echo -e "   ${YELLOW}./logs.sh${NC} - Ver logs"

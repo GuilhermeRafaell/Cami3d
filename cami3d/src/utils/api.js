@@ -1,6 +1,6 @@
 // API helpers para integração com backend
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 export const SWAGGER_URL = `${BACKEND_URL}/`;
 
