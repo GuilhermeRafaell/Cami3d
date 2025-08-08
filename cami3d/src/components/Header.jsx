@@ -1,6 +1,6 @@
 import { User, LogOut, Home } from 'lucide-react'
 
-function Header({ isLoggedIn, onLogin, onLogout, onNavigateToHome }) {
+function Header({ isLoggedIn, user, onLogin, onLogout, onNavigateToHome }) {
   return (
     <header className="header">
       <div className="header-content">
@@ -18,7 +18,9 @@ function Header({ isLoggedIn, onLogin, onLogout, onNavigateToHome }) {
         <div className="auth-section">
           {isLoggedIn ? (
             <div className="user-menu">
-              <span className="welcome-text">Bem-vindo!</span>
+              <span className="welcome-text">
+                Olá, {user?.name || user?.email}!
+              </span>
               <button onClick={onLogout} className="logout-btn">
                 <LogOut size={16} />
                 Sair
