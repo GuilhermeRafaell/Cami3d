@@ -106,8 +106,7 @@ const swaggerDefinition = {
                 type: 'object',
                 properties: {
                   x: { type: 'number' },
-                  y: { type: 'number' },
-                  z: { type: 'number' }
+                  y: { type: 'number' }
                 }
               },
               logoScale: {

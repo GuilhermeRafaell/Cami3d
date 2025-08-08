@@ -303,4 +303,68 @@ router.post('/refresh-token', authenticateToken, (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Recuperação de senha
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200:
+ *         description: Email de recuperação enviado
+ *       404:
+ *         description: Email não encontrado
+ */
+// POST /api/auth/forgot-password  
+router.post('/forgot-password', [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email')
+], async (req, res) => {
+  try {
+    // Check validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Falha na validação',
+        details: errors.array()
+      });
+    }
+
+    const { email } = req.body;
+    const users = await readUsers();
+    
+    const user = users.find(u => u.email === email);
+    
+    // Sempre retornar sucesso por segurança (não revelar se email existe)
+    // Em um sistema real, seria enviado um email com token de reset
+    
+    if (user) {
+      // TODO: Implementar envio de email com token de reset
+      console.log(`Password reset requested for: ${email}`);
+    }
+
+    res.json({
+      message: 'Se o email existir, você receberá instruções para redefinir sua senha.'
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      error: 'Erro do servidor',
+      message: 'Erro ao processar solicitação de recuperação'
+    });
+  }
+});
+
 module.exports = router;

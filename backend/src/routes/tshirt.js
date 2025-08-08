@@ -56,8 +56,8 @@ const tshirtValidation = [
   // Custom validation for required elements
   body()
     .custom((body) => {
-      const hasText = body.text && body.text.trim().length > 0;
-      const hasLogo = body.logo && body.logo.trim().length > 0;
+      const hasText = body.text && typeof body.text === 'string' && body.text.trim().length > 0;
+      const hasLogo = body.logo && typeof body.logo === 'string' && body.logo.trim().length > 0;
       
       if (!hasText && !hasLogo) {
         throw new Error('Adicione ao menos um elemento para finalizar sua camiseta.');
