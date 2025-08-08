@@ -13,6 +13,8 @@ function TShirt({ color, logo, logoPosition, logoScale, text, textPosition, text
         return new THREE.CylinderGeometry(0.8, 1.2, 2, 8, 1, false, 0, Math.PI * 2)
       case 'tank-top':
         return new THREE.CylinderGeometry(0.9, 1.1, 2, 8, 1, false, 0, Math.PI * 2)
+      case 'long-sleeve':
+        return new THREE.CylinderGeometry(1, 1.2, 2, 8, 1, false, 0, Math.PI * 2)
       default: // crew-neck
         return new THREE.CylinderGeometry(1, 1.2, 2, 8, 1, false, 0, Math.PI * 2)
     }
@@ -25,15 +27,15 @@ function TShirt({ color, logo, logoPosition, logoScale, text, textPosition, text
         <meshStandardMaterial color={color} />
       </mesh>
       
-      {/* Mangas (apenas para crew-neck e v-neck) */}
+      {/* Mangas (apenas para crew-neck, v-neck e long-sleeve) */}
       {style !== 'tank-top' && (
         <>
           <mesh position={[-1.3, 0.5, 0]} rotation={[0, 0, Math.PI / 6]}>
-            <cylinderGeometry args={[0.3, 0.4, 1, 8]} />
+            <cylinderGeometry args={style === 'long-sleeve' ? [0.3, 0.4, 1.5, 8] : [0.3, 0.4, 1, 8]} />
             <meshStandardMaterial color={color} />
           </mesh>
           <mesh position={[1.3, 0.5, 0]} rotation={[0, 0, -Math.PI / 6]}>
-            <cylinderGeometry args={[0.3, 0.4, 1, 8]} />
+            <cylinderGeometry args={style === 'long-sleeve' ? [0.3, 0.4, 1.5, 8] : [0.3, 0.4, 1, 8]} />
             <meshStandardMaterial color={color} />
           </mesh>
         </>

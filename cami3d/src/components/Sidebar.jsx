@@ -28,7 +28,8 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido }) {
   const styles = [
     { id: 'crew-neck', name: 'Gola Redonda' },
     { id: 'v-neck', name: 'Gola V' },
-    { id: 'tank-top', name: 'Regata' }
+    { id: 'tank-top', name: 'Regata' },
+    { id: 'long-sleeve', name: 'Manga Longa' }
   ]
 
   return (
@@ -83,8 +84,8 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido }) {
                   <label>Tamanho:</label>
                   <input
                     type="range"
-                    min="0.5"
-                    max="2"
+                    min="0.1"
+                    max="3.0"
                     step="0.1"
                     value={tshirtConfig.logoScale}
                     onChange={(e) => updateConfig({ logoScale: parseFloat(e.target.value) })}
@@ -154,7 +155,7 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido }) {
                   <input
                     type="range"
                     min="0.05"
-                    max="0.2"
+                    max="0.5"
                     step="0.01"
                     value={tshirtConfig.textSize}
                     onChange={(e) => updateConfig({ textSize: parseFloat(e.target.value) })}
@@ -171,9 +172,16 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido }) {
           onClick={() => updateConfig({
             color: '#ffffff',
             logo: null,
-            text: '',
+            logoPosition: { x: 0, y: 0 },
             logoScale: 1,
-            textSize: 0.1
+            text: '',
+            textPosition: { x: 0, y: -0.3 },
+            textColor: '#000000',
+            textSize: 0.1,
+            style: 'crew-neck',
+            modelType: 'procedural',
+            externalModel: null,
+            renderQuality: 'medium'
           })}
           className="reset-btn"
         >

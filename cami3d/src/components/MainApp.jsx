@@ -17,7 +17,10 @@ function MainApp({ onNavigateToHome }) {
     textPosition: { x: 0, y: -0.3 },
     textColor: '#000000',
     textSize: 0.1,
-    style: 'crew-neck' // crew-neck, v-neck, tank-top
+    style: 'crew-neck', // crew-neck, v-neck, tank-top, long-sleeve
+    modelType: 'procedural', // Backend expects this
+    externalModel: null, // Backend expects this
+    renderQuality: 'medium' // Backend expects this
   })
 
   const handleLogin = (userData) => {
