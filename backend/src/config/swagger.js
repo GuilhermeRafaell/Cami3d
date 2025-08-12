@@ -11,8 +11,8 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'http://localhost:3001',
-      description: 'Servidor Local'
+      url: 'https://capmi3d.discloud.app',
+      description: 'Servidor de Produção'
     }
   ],
   components: {

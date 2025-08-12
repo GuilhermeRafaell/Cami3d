@@ -116,3 +116,5 @@ backend/uploads/*
 backend/data/users.json
 backend/data/tshirts.json
 backend/data/uploads.json
+.discloudignore
+discloud.config
