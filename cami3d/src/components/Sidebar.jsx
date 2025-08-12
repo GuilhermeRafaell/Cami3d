@@ -112,6 +112,33 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido, userToken }) {
                     value={tshirtConfig.logoScale}
                     onChange={(e) => updateConfig({ logoScale: parseFloat(e.target.value) })}
                   />
+                  <label>Posição Horizontal:</label>
+                  <input
+                    type="range"
+                    min="-1"
+                    max="1"
+                    step="0.01"
+                    value={tshirtConfig.logoPosition?.x || 0}
+                    onChange={e => updateConfig({ logoPosition: { ...tshirtConfig.logoPosition, x: parseFloat(e.target.value) } })}
+                  />
+                  <label>Posição Vertical:</label>
+                  <input
+                    type="range"
+                    min="-1"
+                    max="1"
+                    step="0.01"
+                    value={tshirtConfig.logoPosition?.y || 0}
+                    onChange={e => updateConfig({ logoPosition: { ...tshirtConfig.logoPosition, y: parseFloat(e.target.value) } })}
+                  />
+                  <label>Rotação:</label>
+                  <input
+                    type="range"
+                    min="-180"
+                    max="180"
+                    step="1"
+                    value={tshirtConfig.logoRotation || 0}
+                    onChange={e => updateConfig({ logoRotation: parseFloat(e.target.value) })}
+                  />
                 </div>
               )}
             </div>
@@ -171,7 +198,6 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido, userToken }) {
                     className="color-input"
                   />
                 </div>
-
                 <div className="section">
                   <label>Tamanho:</label>
                   <input
@@ -181,6 +207,35 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido, userToken }) {
                     step="0.01"
                     value={tshirtConfig.textSize}
                     onChange={(e) => updateConfig({ textSize: parseFloat(e.target.value) })}
+                  />
+                </div>
+                <div className="section">
+                  <label>Posição Horizontal:</label>
+                  <input
+                    type="range"
+                    min="-1"
+                    max="1"
+                    step="0.01"
+                    value={tshirtConfig.textPosition?.x || 0}
+                    onChange={e => updateConfig({ textPosition: { ...tshirtConfig.textPosition, x: parseFloat(e.target.value) } })}
+                  />
+                  <label>Posição Vertical:</label>
+                  <input
+                    type="range"
+                    min="-1"
+                    max="1"
+                    step="0.01"
+                    value={tshirtConfig.textPosition?.y || 0}
+                    onChange={e => updateConfig({ textPosition: { ...tshirtConfig.textPosition, y: parseFloat(e.target.value) } })}
+                  />
+                  <label>Rotação:</label>
+                  <input
+                    type="range"
+                    min="-180"
+                    max="180"
+                    step="1"
+                    value={tshirtConfig.textRotation || 0}
+                    onChange={e => updateConfig({ textRotation: parseFloat(e.target.value) })}
                   />
                 </div>
               </>

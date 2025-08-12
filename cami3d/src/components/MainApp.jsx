@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Header from './Header'
 import Sidebar from './Sidebar'
+import TShirtGLTFViewer from './TShirtGLTFViewer'
 import TShirtOBJViewer from './TShirtOBJViewer'
 import AuthModal from './AuthModal'
 import { saveDesign, getMyDesigns } from '../utils/api'
