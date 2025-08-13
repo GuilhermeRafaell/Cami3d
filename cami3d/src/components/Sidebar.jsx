@@ -30,7 +30,7 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido, userToken }) {
       const response = await uploadImage(file, userToken)
       
       // Usar a URL retornada pelo backend
-      const logoUrl = `http://localhost:3001${response.file.url}`
+      const logoUrl = `https://capmi3d.discloud.app${response.file.url}`
       updateConfig({ logo: logoUrl })
       
       console.log('Upload realizado com sucesso:', response)
