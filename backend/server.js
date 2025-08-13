@@ -6,6 +6,9 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
 
+// Import database connection
+const connectDB = require('./src/config/database');
+
 // Import routes
 const authRoutes = require('./src/routes/auth');
 const tshirtRoutes = require('./src/routes/tshirt');
@@ -18,7 +21,7 @@ const { initStorage } = require('./src/middleware/initStorage');
 const { swaggerSpec, swaggerUi, swaggerUiOptions } = require('./src/config/swagger');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 
 // Security middleware
 app.use(helmet());
@@ -34,12 +37,70 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // In development, allow localhost origins
+    if (process.env.NODE_ENV === 'development') {
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:8080',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:8080'
+      ];
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+    }
+    
+    // In production, allow specific domains
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      process.env.PRODUCTION_URL,
+      process.env.PRODUCTION_FRONTEND_URL,
+      'http://capmi3d.discloud.app',
+      'https://capmi3d.discloud.app',
+      'http://cami3d.discloud.app',
+      'https://cami3d.discloud.app',
+      // Add your production frontend URL here
+    ].filter(Boolean);
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // For API testing tools and direct API calls, allow if no origin
+    callback(null, true);
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin'
+  ],
+  exposedHeaders: ['Content-Length', 'X-Request-ID'],
+  maxAge: 86400 // 24 hours
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
+
+// Debug middleware for CORS (only in development)
+if (process.env.NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    console.log(`CORS Debug - Origin: ${req.get('origin')}, Method: ${req.method}, Path: ${req.path}`);
+    next();
+  });
+}
 
 // Logging
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
@@ -118,13 +179,19 @@ app.use(errorHandler);
 // Start server
 const startServer = async () => {
   try {
-    // Inicializar sistema de armazenamento
+    // Conectar ao MongoDB
+    await connectDB();
+
+    // Inicializar sistema de armazenamento (para uploads)
     await initStorage();
 
     app.listen(PORT, () => {
       console.log(`🚀 Cami3D Backend Server running on port ${PORT}`);
       console.log(`📁 Environment: ${process.env.NODE_ENV}`);
       console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
+      console.log(`🌐 Production Backend: ${process.env.PRODUCTION_URL}`);
+      console.log(`🌐 Production Frontend: ${process.env.PRODUCTION_FRONTEND_URL}`);
+      console.log(`🗄️  MongoDB: Connected`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
       console.log(`📖 API Documentation: http://localhost:${PORT}/`);
     });

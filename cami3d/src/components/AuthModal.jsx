@@ -1,11 +1,18 @@
 import { useState } from 'react'
 import { X, User, Mail, Lock } from 'lucide-react'
 import { login, register, forgotPassword } from '../utils/api'
+import ConfirmationModal from './ConfirmationModal'
 
 function AuthModal({ onLogin, onClose }) {
   const [isLogin, setIsLogin] = useState(true)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [confirmationData, setConfirmationData] = useState({
+    type: 'success',
+    title: '',
+    message: ''
+  })
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -59,7 +66,12 @@ function AuthModal({ onLogin, onClose }) {
       setIsLoading(true)
       try {
         await forgotPassword(formData.email)
-        alert('Email de recuperação enviado!')
+        setConfirmationData({
+          type: 'success',
+          title: 'Email Enviado!',
+          message: 'Verifique sua caixa de entrada para redefinir sua senha.'
+        })
+        setShowConfirmation(true)
         setShowForgotPassword(false)
       } catch (error) {
         setErrors({ email: error.message })
@@ -82,28 +94,66 @@ function AuthModal({ onLogin, onClose }) {
       if (isLogin) {
         // Login real
         response = await login(formData.email, formData.password)
+        
+        // Salvar token no localStorage
+        localStorage.setItem('authToken', response.token)
+        
+        // Dados do usuário para o frontend
+        const userData = {
+          id: response.user.id,
+          email: response.user.email,
+          name: response.user.name,
+          token: response.token
+        }
+
+        // Mostrar modal de confirmação de login
+        setConfirmationData({
+          type: 'success',
+          title: 'Login Realizado!',
+          message: `Bem-vindo de volta, ${response.user.name}!`
+        })
+        setShowConfirmation(true)
+
+        // Chamar onLogin para atualizar o estado no App (permanece na Home)
+        onLogin(userData)
+        
+        // Fechar modal após pequeno delay
+        setTimeout(() => {
+          onClose()
+        }, 1500)
+        
       } else {
         // Registro real
         response = await register(formData.email, formData.password, formData.name)
+        
+        // Mostrar modal de confirmação de cadastro
+        setConfirmationData({
+          type: 'success',
+          title: 'Cadastro Realizado com Sucesso!',
+          message: 'Agora você pode fazer login com suas credenciais.'
+        })
+        setShowConfirmation(true)
+        
+        // Limpar formulário após cadastro
+        setFormData({ email: '', password: '', name: '' })
+        
+        // Mudar para tela de login após 2 segundos
+        setTimeout(() => {
+          setIsLogin(true)
+        }, 2000)
       }
 
-      // Salvar token no localStorage
-      localStorage.setItem('authToken', response.token)
-      
-      // Dados do usuário para o frontend
-      const userData = {
-        id: response.user.id,
-        email: response.user.email,
-        name: response.user.name,
-        token: response.token
-      }
-
-      onLogin(userData)
     } catch (error) {
       console.error('Authentication error:', error)
-      setErrors({ 
-        general: error.message || 'Erro na autenticação. Tente novamente.' 
+      
+      // Mostrar modal de erro
+      setConfirmationData({
+        type: 'error',
+        title: isLogin ? 'Erro no Login' : 'Erro no Cadastro',
+        message: error.message || 'Erro na autenticação. Tente novamente.'
       })
+      setShowConfirmation(true)
+      
     } finally {
       setIsLoading(false)
     }
@@ -253,6 +303,17 @@ function AuthModal({ onLogin, onClose }) {
           )}
         </form>
       </div>
+      
+      {/* Modal de Confirmação */}
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        type={confirmationData.type}
+        title={confirmationData.title}
+        message={confirmationData.message}
+        autoClose={true}
+        autoCloseDelay={3000}
+      />
     </div>
   )
 }

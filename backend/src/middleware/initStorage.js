@@ -13,32 +13,6 @@ const initStorage = async () => {
       console.log('📁 Diretório uploads/ criado');
     }
 
-    // Criar diretório de dados se não existir
-    const dataDir = path.join(__dirname, '../../data');
-    try {
-      await fs.access(dataDir);
-    } catch {
-      await fs.mkdir(dataDir, { recursive: true });
-      console.log('📁 Diretório data/ criado');
-    }
-
-    // Verificar e criar arquivos JSON se não existirem
-    const dataFiles = [
-      { name: 'users.json', content: [] },
-      { name: 'tshirts.json', content: [] },
-      { name: 'uploads.json', content: [] }
-    ];
-
-    for (const file of dataFiles) {
-      const filePath = path.join(dataDir, file.name);
-      try {
-        await fs.access(filePath);
-      } catch {
-        await fs.writeFile(filePath, JSON.stringify(file.content, null, 2));
-        console.log(`📄 Arquivo ${file.name} criado`);
-      }
-    }
-
     console.log('✅ Inicialização do sistema de armazenamento concluída');
   } catch (error) {
     console.error('❌ Erro na inicialização do armazenamento:', error);

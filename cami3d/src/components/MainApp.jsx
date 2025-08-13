@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import Header from './Header'
 import Sidebar from './Sidebar'
+import TShirtGLTFViewer from './TShirtGLTFViewer'
 import TShirtOBJViewer from './TShirtOBJViewer'
 import AuthModal from './AuthModal'
 import { saveDesign, getMyDesigns } from '../utils/api'
 import './MainApp.css'
 
-function MainApp({ onNavigateToHome }) {
-  const [user, setUser] = useState(null)
+function MainApp({ onNavigateToHome, user: initialUser, onLogin, onLogout }) {
+  const [user, setUser] = useState(initialUser)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [savedDesigns, setSavedDesigns] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -26,24 +27,34 @@ function MainApp({ onNavigateToHome }) {
     renderQuality: 'medium' // Backend expects this
   })
 
-  // Verificar se há token salvo ao carregar
+  // Sincronizar com o usuário global quando mudar
   useEffect(() => {
-    const savedToken = localStorage.getItem('authToken')
-    const savedUser = localStorage.getItem('userData')
-    
-    if (savedToken && savedUser) {
-      try {
-        const userData = JSON.parse(savedUser)
-        userData.token = savedToken
-        setUser(userData)
-        loadUserDesigns(savedToken)
-      } catch (error) {
-        console.error('Erro ao carregar dados salvos:', error)
-        localStorage.removeItem('authToken')
-        localStorage.removeItem('userData')
+    setUser(initialUser)
+    if (initialUser?.token) {
+      loadUserDesigns(initialUser.token)
+    }
+  }, [initialUser])
+
+  // Verificar se há token salvo ao carregar (fallback)
+  useEffect(() => {
+    if (!initialUser) {
+      const savedToken = localStorage.getItem('authToken')
+      const savedUser = localStorage.getItem('userData')
+      
+      if (savedToken && savedUser) {
+        try {
+          const userData = JSON.parse(savedUser)
+          userData.token = savedToken
+          setUser(userData)
+          loadUserDesigns(savedToken)
+        } catch (error) {
+          console.error('Erro ao carregar dados salvos:', error)
+          localStorage.removeItem('authToken')
+          localStorage.removeItem('userData')
+        }
       }
     }
-  }, [])
+  }, [initialUser])
 
   const loadUserDesigns = async (token) => {
     try {
@@ -57,14 +68,7 @@ function MainApp({ onNavigateToHome }) {
   const handleLogin = (userData) => {
     setUser(userData)
     setShowAuthModal(false)
-    
-    // Salvar dados no localStorage
-    localStorage.setItem('authToken', userData.token)
-    localStorage.setItem('userData', JSON.stringify({
-      id: userData.id,
-      email: userData.email,
-      name: userData.name
-    }))
+    onLogin(userData) // Atualizar estado global
     
     // Carregar designs do usuário
     loadUserDesigns(userData.token)
@@ -75,12 +79,7 @@ function MainApp({ onNavigateToHome }) {
   const handleLogout = () => {
     setUser(null)
     setSavedDesigns([])
-    
-    // Limpar localStorage
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('userData')
-    
-    onNavigateToHome() // Volta para home ao fazer logout
+    onLogout() // Atualizar estado global e navegar para home
   }
 
   const updateTshirtConfig = (updates) => {

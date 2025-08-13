@@ -1,4 +1,4 @@
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useLoader } from '@react-three/fiber'
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei'
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
@@ -13,25 +13,43 @@ function findMeshesByName(object, names) {
   return found
 }
 
-function TShirtModel(props) {
+function TShirtModel({ logoUrl, logoScale = 1, logoPosition = { x: 0, y: 0 }, logoRotation = 1 }) {
   const { scene } = useGLTF('/assets/tshirt.glb')
   const meshNames = ['Object_4', 'Object_5', 'Object_6', 'Object_7']
   const meshes = useMemo(() => findMeshesByName(scene, meshNames), [scene])
 
-  // Força cor e escala para debug
-  meshes.forEach((mesh, idx) => {
-    mesh.castShadow = true
-    mesh.receiveShadow = true
-    if (mesh.material) {
-      mesh.material.color = new THREE.Color(['#ff0000', '#00ff00', '#0000ff', '#ffff00'][idx % 4])
-      mesh.material.opacity = 1
-      mesh.material.transparent = false
-      mesh.material.depthTest = true
+  // Carrega a textura da imagem do usuário, se houver
+  const texture = logoUrl ? useLoader(THREE.TextureLoader, logoUrl) : null
+
+  useEffect(() => {
+    if (texture) {
+      texture.center.set(0.5, 0.5)
+      texture.offset.set(logoPosition.x, logoPosition.y)
+      texture.repeat.set(logoScale, -logoScale) // Inverte o eixo Y
+      texture.rotation = (logoRotation * Math.PI) / 180
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+      texture.needsUpdate = true
     }
-  })
+    meshes.forEach((mesh) => {
+      mesh.castShadow = true
+      mesh.receiveShadow = true
+      if (mesh.material) {
+        if (texture) {
+          mesh.material.map = texture
+          mesh.material.needsUpdate = true
+        } else {
+          mesh.material.map = null
+          mesh.material.color = new THREE.Color('#ffffff')
+        }
+        mesh.material.opacity = 1
+        mesh.material.transparent = false
+        mesh.material.depthTest = true
+      }
+    })
+  }, [texture, logoScale, logoPosition.x, logoPosition.y, logoRotation, meshes])
 
   return (
-    <group {...props} scale={4} position={[0, 0, 0]}>
+    <group scale={4} position={[0, 0, 0]}>
       {meshes.map((mesh) => (
         <primitive object={mesh} key={mesh.uuid} />
       ))}
@@ -39,7 +57,7 @@ function TShirtModel(props) {
   )
 }
 
-function TShirtGLTFViewer() {
+function TShirtGLTFViewer({ logoUrl, logoScale, logoPosition, logoRotation }) {
   return (
     <div
       style={{
@@ -55,7 +73,7 @@ function TShirtGLTFViewer() {
         <Environment preset="city" />
         <axesHelper args={[2]} />
         <gridHelper args={[10, 10]} />
-        <TShirtModel />
+        <TShirtModel logoUrl={logoUrl} logoScale={logoScale} logoPosition={logoPosition} logoRotation={logoRotation} />
         <OrbitControls enablePan={true} minDistance={1} maxDistance={10} />
       </Canvas>
     </div>
