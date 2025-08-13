@@ -1,32 +1,10 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const { v4: uuidv4 } = require('uuid');
-const fs = require('fs').promises;
-const path = require('path');
 const { authenticateToken } = require('../middleware/auth');
+const { User } = require('../models');
 
 const router = express.Router();
-const USERS_FILE = path.join(__dirname, '../../data/users.json');
-
-// Utility function to read users
-const readUsers = async () => {
-  try {
-    const data = await fs.readFile(USERS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return [];
-    }
-    throw error;
-  }
-};
-
-// Utility function to write users
-const writeUsers = async (users) => {
-  await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
-};
 
 /**
  * @swagger
@@ -79,11 +57,8 @@ router.post('/register', [
 
     const { email, password, name } = req.body;
 
-    // Read existing users
-    const users = await readUsers();
-
     // Check if user already exists
-    const existingUser = users.find(user => user.email === email);
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({
         error: 'Usuário já existe',
@@ -91,29 +66,20 @@ router.post('/register', [
       });
     }
 
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create new user
-    const newUser = {
-      id: uuidv4(),
+    // Create new user (password will be hashed automatically by middleware)
+    const newUser = new User({
       email,
       name,
-      password: hashedPassword,
-      role: 'user',
-      createdAt: new Date().toISOString(),
-      lastLogin: null
-    };
+      password,
+      role: 'user'
+    });
 
-    // Add user to array and save
-    users.push(newUser);
-    await writeUsers(users);
+    await newUser.save();
 
     // Generate JWT token
     const token = jwt.sign(
       { 
-        id: newUser.id, 
+        id: newUser._id, 
         email: newUser.email, 
         role: newUser.role 
       },
@@ -124,7 +90,7 @@ router.post('/register', [
     res.status(201).json({
       message: 'Usuário registrado com sucesso',
       user: {
-        id: newUser.id,
+        id: newUser._id,
         email: newUser.email,
         name: newUser.name,
         role: newUser.role,
@@ -188,11 +154,8 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
-    // Read users
-    const users = await readUsers();
-
-    // Find user
-    const user = users.find(u => u.email === email);
+    // Find user and include password for comparison
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(401).json({
         error: 'Credenciais inválidas',
@@ -200,8 +163,8 @@ router.post('/login', [
       });
     }
 
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    // Check password using the model method
+    const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
       return res.status(401).json({
         error: 'Credenciais inválidas',
@@ -210,13 +173,12 @@ router.post('/login', [
     }
 
     // Update last login
-    user.lastLogin = new Date().toISOString();
-    await writeUsers(users);
+    await user.updateLastLogin();
 
     // Generate JWT token
     const token = jwt.sign(
       { 
-        id: user.id, 
+        id: user._id, 
         email: user.email, 
         role: user.role 
       },
@@ -228,7 +190,7 @@ router.post('/login', [
       message: 'Login successful',
       token,
       user: {
-        id: user.id,
+        id: user._id,
         email: user.email,
         name: user.name,
         role: user.role,
@@ -248,8 +210,7 @@ router.post('/login', [
 // POST /api/auth/verify-token
 router.post('/verify-token', authenticateToken, async (req, res) => {
   try {
-    const users = await readUsers();
-    const user = users.find(u => u.id === req.user.id);
+    const user = await User.findById(req.user.id);
     
     if (!user) {
       return res.status(404).json({
@@ -261,7 +222,7 @@ router.post('/verify-token', authenticateToken, async (req, res) => {
     res.json({
       valid: true,
       user: {
-        id: user.id,
+        id: user._id,
         email: user.email,
         name: user.name,
         role: user.role
@@ -277,23 +238,39 @@ router.post('/verify-token', authenticateToken, async (req, res) => {
 });
 
 // POST /api/auth/refresh-token
-router.post('/refresh-token', authenticateToken, (req, res) => {
+router.post('/refresh-token', authenticateToken, async (req, res) => {
   try {
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        error: 'Usuário não encontrado',
+        message: 'Usuário associado ao token não existe mais'
+      });
+    }
+
     // Generate new token
-    const token = jwt.sign(
+    const newToken = jwt.sign(
       { 
-        id: req.user.id, 
-        email: req.user.email, 
-        role: req.user.role 
+        id: user._id, 
+        email: user.email, 
+        role: user.role 
       },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRE }
+      process.env.JWT_SECRET || 'cami3d_secret_key',
+      { expiresIn: '7d' }
     );
 
     res.json({
-      message: 'Token refreshed successfully',
-      token
+      message: 'Token renovado com sucesso',
+      token: newToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
     });
+
   } catch (error) {
     console.error('Token refresh error:', error);
     res.status(500).json({
@@ -342,15 +319,13 @@ router.post('/forgot-password', [
     }
 
     const { email } = req.body;
-    const users = await readUsers();
+    const user = await User.findOne({ email });
     
-    const user = users.find(u => u.email === email);
-    
-    // Sempre retornar sucesso por segurança (não revelar se email existe)
-    // Em um sistema real, seria enviado um email com token de reset
+    // Always return success for security (don't reveal if email exists)
+    // In a real system, an email with reset token would be sent
     
     if (user) {
-      // TODO: Implementar envio de email com token de reset
+      // TODO: Implement email sending with reset token
       console.log(`Password reset requested for: ${email}`);
     }
 
@@ -363,99 +338,6 @@ router.post('/forgot-password', [
     res.status(500).json({
       error: 'Erro do servidor',
       message: 'Erro ao processar solicitação de recuperação'
-    });
-  }
-});
-
-/**
- * @swagger
- * /api/auth/verify-token:
- *   post:
- *     summary: Verificar token JWT
- *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Token válido
- *       401:
- *         description: Token inválido ou expirado
- */
-// POST /api/auth/verify-token
-router.post('/verify-token', authenticateToken, async (req, res) => {
-  try {
-    // Se chegou até aqui, o token é válido (middleware authenticateToken passou)
-    res.json({
-      valid: true,
-      user: {
-        id: req.user.id,
-        email: req.user.email,
-        role: req.user.role
-      }
-    });
-  } catch (error) {
-    console.error('Token verification error:', error);
-    res.status(500).json({
-      error: 'Erro do servidor',
-      message: 'Erro ao verificar token'
-    });
-  }
-});
-
-/**
- * @swagger
- * /api/auth/refresh-token:
- *   post:
- *     summary: Renovar token JWT
- *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Novo token gerado
- *       401:
- *         description: Token inválido
- */
-// POST /api/auth/refresh-token
-router.post('/refresh-token', authenticateToken, async (req, res) => {
-  try {
-    const users = await readUsers();
-    const user = users.find(u => u.id === req.user.id);
-    
-    if (!user) {
-      return res.status(404).json({
-        error: 'Usuário não encontrado',
-        message: 'Usuário associado ao token não existe mais'
-      });
-    }
-
-    // Gerar novo token
-    const newToken = jwt.sign(
-      { 
-        id: user.id, 
-        email: user.email, 
-        role: user.role 
-      },
-      process.env.JWT_SECRET || 'cami3d_secret_key',
-      { expiresIn: '7d' }
-    );
-
-    res.json({
-      message: 'Token renovado com sucesso',
-      token: newToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role
-      }
-    });
-
-  } catch (error) {
-    console.error('Token refresh error:', error);
-    res.status(500).json({
-      error: 'Erro do servidor',
-      message: 'Erro ao renovar token'
     });
   }
 });

@@ -1,29 +1,9 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { v4: uuidv4 } = require('uuid');
-const fs = require('fs').promises;
-const path = require('path');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { Tshirt, User } = require('../models');
 
 const router = express.Router();
-const TSHIRTS_FILE = path.join(__dirname, '../../data/tshirts.json');
-
-// Utility functions
-const readTshirts = async () => {
-  try {
-    const data = await fs.readFile(TSHIRTS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return [];
-    }
-    throw error;
-  }
-};
-
-const writeTshirts = async (tshirts) => {
-  await fs.writeFile(TSHIRTS_FILE, JSON.stringify(tshirts, null, 2));
-};
 
 // Validation rules
 const tshirtValidation = [
@@ -75,9 +55,8 @@ const tshirtValidation = [
       if (body.logo && body.logo.trim().length > 0) {
         elements.push('logo');
       }
-      // Add other element types if they exist in the future
       
-      const maxElements = 5; // Define maximum number of elements
+      const maxElements = 5;
       if (elements.length > maxElements) {
         throw new Error('Limite de elementos excedido. Remova alguns itens antes de continuar.');
       }
@@ -138,17 +117,16 @@ router.post('/save', authenticateToken, tshirtValidation, async (req, res) => {
       modelType,
       externalModel,
       renderQuality,
-      name // Optional name for the design
+      name
     } = req.body;
 
-    // Read existing t-shirts
-    const tshirts = await readTshirts();
+    // Count user's designs for default naming
+    const userDesignsCount = await Tshirt.countDocuments({ userId: req.user.id });
 
     // Create new t-shirt design
-    const newTshirt = {
-      id: uuidv4(),
+    const newTshirt = new Tshirt({
       userId: req.user.id,
-      name: name || `Design ${tshirts.length + 1}`,
+      name: name || `Design ${userDesignsCount + 1}`,
       config: {
         color,
         logo,
@@ -163,19 +141,15 @@ router.post('/save', authenticateToken, tshirtValidation, async (req, res) => {
         externalModel: externalModel || null,
         renderQuality: renderQuality || 'medium'
       },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
       isPublic: false
-    };
+    });
 
-    // Add to array and save
-    tshirts.push(newTshirt);
-    await writeTshirts(tshirts);
+    await newTshirt.save();
 
     res.status(201).json({
       message: 'Design da camiseta salvo com sucesso',
       tshirt: {
-        id: newTshirt.id,
+        id: newTshirt._id,
         name: newTshirt.name,
         config: newTshirt.config,
         createdAt: newTshirt.createdAt
@@ -200,41 +174,9 @@ router.post('/save', authenticateToken, tshirtValidation, async (req, res) => {
  *     tags: [T-Shirts]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Número da página
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 100
- *           default: 10
- *         description: Itens por página
  *     responses:
  *       200:
  *         description: Lista de designs recuperada com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 tshirts:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/TshirtDesign'
- *                 pagination:
- *                   type: object
- *                   properties:
- *                     page: { type: integer, example: 1 }
- *                     limit: { type: integer, example: 10 }
- *                     total: { type: integer, example: 25 }
- *                     pages: { type: integer, example: 3 }
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       500:
@@ -243,23 +185,18 @@ router.post('/save', authenticateToken, tshirtValidation, async (req, res) => {
 // GET /api/tshirt/my-designs
 router.get('/my-designs', authenticateToken, async (req, res) => {
   try {
-    const tshirts = await readTshirts();
-    
-    // Filter user's designs
-    const userTshirts = tshirts
-      .filter(tshirt => tshirt.userId === req.user.id)
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-      .map(tshirt => ({
-        id: tshirt.id,
+    const tshirts = await Tshirt.find({ userId: req.user.id })
+      .sort({ updatedAt: -1 });
+
+    res.json({
+      designs: tshirts.map(tshirt => ({
+        id: tshirt._id,
         name: tshirt.name,
         config: tshirt.config,
         createdAt: tshirt.createdAt,
         updatedAt: tshirt.updatedAt
-      }));
-
-    res.json({
-      designs: userTshirts,
-      total: userTshirts.length
+      })),
+      total: tshirts.length
     });
 
   } catch (error) {
@@ -290,23 +227,8 @@ router.get('/my-designs', authenticateToken, async (req, res) => {
  *     responses:
  *       200:
  *         description: Design encontrado
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 tshirt:
- *                   $ref: '#/components/schemas/TshirtDesign'
  *       404:
  *         description: Design não encontrado
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Design não encontrado
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       500:
@@ -316,9 +238,7 @@ router.get('/my-designs', authenticateToken, async (req, res) => {
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const tshirts = await readTshirts();
-    
-    const tshirt = tshirts.find(t => t.id === id);
+    const tshirt = await Tshirt.findById(id);
     
     if (!tshirt) {
       return res.status(404).json({
@@ -329,7 +249,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 
     // Check if user can access this design
     const canAccess = tshirt.isPublic || 
-                     (req.user && req.user.id === tshirt.userId);
+                     (req.user && req.user.id === tshirt.userId.toString());
     
     if (!canAccess) {
       return res.status(403).json({
@@ -338,13 +258,18 @@ router.get('/:id', optionalAuth, async (req, res) => {
       });
     }
 
+    // Increment views if not owner
+    if (!req.user || req.user.id !== tshirt.userId.toString()) {
+      await tshirt.incrementViews();
+    }
+
     res.json({
       design: {
-        id: tshirt.id,
+        id: tshirt._id,
         name: tshirt.name,
         config: tshirt.config,
         createdAt: tshirt.createdAt,
-        isOwner: req.user && req.user.id === tshirt.userId
+        isOwner: req.user && req.user.id === tshirt.userId.toString()
       }
     });
 
@@ -370,13 +295,9 @@ router.put('/:id', authenticateToken, tshirtValidation, async (req, res) => {
     }
 
     const { id } = req.params;
-    const tshirts = await readTshirts();
+    const tshirt = await Tshirt.findOne({ _id: id, userId: req.user.id });
     
-    const tshirtIndex = tshirts.findIndex(t => 
-      t.id === id && t.userId === req.user.id
-    );
-    
-    if (tshirtIndex === -1) {
+    if (!tshirt) {
       return res.status(404).json({
         error: 'Design não encontrado',
         message: 'Design da camiseta não encontrado ou você não tem permissão para editá-lo'
@@ -385,26 +306,22 @@ router.put('/:id', authenticateToken, tshirtValidation, async (req, res) => {
 
     // Update the design
     const updatedConfig = {
-      ...tshirts[tshirtIndex].config,
+      ...tshirt.config.toObject(),
       ...req.body
     };
 
-    tshirts[tshirtIndex] = {
-      ...tshirts[tshirtIndex],
-      name: req.body.name || tshirts[tshirtIndex].name,
-      config: updatedConfig,
-      updatedAt: new Date().toISOString()
-    };
+    tshirt.name = req.body.name || tshirt.name;
+    tshirt.config = updatedConfig;
 
-    await writeTshirts(tshirts);
+    await tshirt.save();
 
     res.json({
       message: 'Design atualizado com sucesso',
       design: {
-        id: tshirts[tshirtIndex].id,
-        name: tshirts[tshirtIndex].name,
-        config: tshirts[tshirtIndex].config,
-        updatedAt: tshirts[tshirtIndex].updatedAt
+        id: tshirt._id,
+        name: tshirt.name,
+        config: tshirt.config,
+        updatedAt: tshirt.updatedAt
       }
     });
 
@@ -421,22 +338,16 @@ router.put('/:id', authenticateToken, tshirtValidation, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const tshirts = await readTshirts();
+    const tshirt = await Tshirt.findOne({ _id: id, userId: req.user.id });
     
-    const tshirtIndex = tshirts.findIndex(t => 
-      t.id === id && t.userId === req.user.id
-    );
-    
-    if (tshirtIndex === -1) {
+    if (!tshirt) {
       return res.status(404).json({
         error: 'Design não encontrado',
         message: 'Design da camiseta não encontrado ou você não tem permissão para excluí-lo'
       });
     }
 
-    // Remove from array
-    tshirts.splice(tshirtIndex, 1);
-    await writeTshirts(tshirts);
+    await Tshirt.findByIdAndDelete(id);
 
     res.json({
       message: 'Design excluído com sucesso'
@@ -455,9 +366,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 router.post('/:id/duplicate', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const tshirts = await readTshirts();
-    
-    const originalTshirt = tshirts.find(t => t.id === id);
+    const originalTshirt = await Tshirt.findById(id);
     
     if (!originalTshirt) {
       return res.status(404).json({
@@ -467,7 +376,7 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
     }
 
     // Check if user can access this design
-    const canAccess = originalTshirt.isPublic || originalTshirt.userId === req.user.id;
+    const canAccess = originalTshirt.isPublic || originalTshirt.userId.toString() === req.user.id;
     
     if (!canAccess) {
       return res.status(403).json({
@@ -477,23 +386,19 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
     }
 
     // Create duplicate
-    const duplicatedTshirt = {
-      id: uuidv4(),
+    const duplicatedTshirt = new Tshirt({
       userId: req.user.id,
-      name: `${originalTshirt.name} (Cópia)`,
-      config: { ...originalTshirt.config },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      name: `${originalTshirt.name || 'Design'} (Cópia)`,
+      config: originalTshirt.config.toObject(),
       isPublic: false
-    };
+    });
 
-    tshirts.push(duplicatedTshirt);
-    await writeTshirts(tshirts);
+    await duplicatedTshirt.save();
 
     res.status(201).json({
       message: 'Design duplicado com sucesso',
       design: {
-        id: duplicatedTshirt.id,
+        id: duplicatedTshirt._id,
         name: duplicatedTshirt.name,
         config: duplicatedTshirt.config,
         createdAt: duplicatedTshirt.createdAt
@@ -523,7 +428,6 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
  *           type: integer
  *           minimum: 1
  *           default: 1
- *         description: Número da página
  *       - in: query
  *         name: limit
  *         schema:
@@ -531,44 +435,9 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
  *           minimum: 1
  *           maximum: 50
  *           default: 20
- *         description: Itens por página
- *       - in: query
- *         name: color
- *         schema:
- *           type: string
- *         description: Filtrar por cor
- *       - in: query
- *         name: style
- *         schema:
- *           type: string
- *           enum: [crew-neck, v-neck, tank-top, long-sleeve]
- *         description: Filtrar por estilo
  *     responses:
  *       200:
  *         description: Galeria carregada com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 designs:
- *                   type: array
- *                   items:
- *                     allOf:
- *                       - $ref: '#/components/schemas/TshirtDesign'
- *                       - type: object
- *                         properties:
- *                           user:
- *                             type: object
- *                             properties:
- *                               username: { type: string, example: fulano }
- *                 pagination:
- *                   type: object
- *                   properties:
- *                     page: { type: integer, example: 1 }
- *                     limit: { type: integer, example: 20 }
- *                     total: { type: integer, example: 150 }
- *                     pages: { type: integer, example: 8 }
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
@@ -576,30 +445,32 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
 router.get('/public/gallery', async (req, res) => {
   try {
     const { page = 1, limit = 12 } = req.query;
-    const tshirts = await readTshirts();
-    
-    // Filter public designs
-    const publicTshirts = tshirts
-      .filter(tshirt => tshirt.isPublic)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const skip = (page - 1) * limit;
 
-    // Pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + parseInt(limit);
-    const paginatedTshirts = publicTshirts.slice(startIndex, endIndex);
+    const [tshirts, total] = await Promise.all([
+      Tshirt.find({ isPublic: true })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('userId', 'name'),
+      Tshirt.countDocuments({ isPublic: true })
+    ]);
 
     res.json({
-      designs: paginatedTshirts.map(tshirt => ({
-        id: tshirt.id,
+      designs: tshirts.map(tshirt => ({
+        id: tshirt._id,
         name: tshirt.name,
         config: tshirt.config,
-        createdAt: tshirt.createdAt
+        createdAt: tshirt.createdAt,
+        user: {
+          username: tshirt.userId?.name || 'Anonymous'
+        }
       })),
       pagination: {
         current: parseInt(page),
-        total: Math.ceil(publicTshirts.length / limit),
-        count: paginatedTshirts.length,
-        totalDesigns: publicTshirts.length
+        total: Math.ceil(total / limit),
+        count: tshirts.length,
+        totalDesigns: total
       }
     });
 

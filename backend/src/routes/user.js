@@ -1,29 +1,10 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
-const fs = require('fs').promises;
-const path = require('path');
 const { authenticateToken } = require('../middleware/auth');
+const { User, Tshirt, Upload } = require('../models');
 
 const router = express.Router();
-const USERS_FILE = path.join(__dirname, '../../data/users.json');
-
-// Utility functions
-const readUsers = async () => {
-  try {
-    const data = await fs.readFile(USERS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return [];
-    }
-    throw error;
-  }
-};
-
-const writeUsers = async (users) => {
-  await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
-};
 
 /**
  * @swagger
@@ -37,26 +18,8 @@ const writeUsers = async (users) => {
  *     responses:
  *       200:
  *         description: Perfil recuperado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 user:
- *                   $ref: '#/components/schemas/User'
  *       404:
  *         description: Usuário não encontrado
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: User not found
- *                 message:
- *                   type: string
- *                   example: User profile not found
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       500:
@@ -65,8 +28,7 @@ const writeUsers = async (users) => {
 // GET /api/user/profile
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const users = await readUsers();
-    const user = users.find(u => u.id === req.user.id);
+    const user = await User.findById(req.user.id);
     
     if (!user) {
       return res.status(404).json({
@@ -77,7 +39,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
     res.json({
       user: {
-        id: user.id,
+        id: user._id,
         email: user.email,
         name: user.name,
         role: user.role,
@@ -114,41 +76,18 @@ router.get('/profile', authenticateToken, async (req, res) => {
  *               name:
  *                 type: string
  *                 minLength: 2
- *                 example: Fulano de Tal Silva
  *               email:
  *                 type: string
  *                 format: email
- *                 example: fulano.silva@mail.com
  *     responses:
  *       200:
  *         description: Perfil atualizado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Profile updated successfully
- *                 user:
- *                   $ref: '#/components/schemas/User'
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       404:
  *         description: Usuário não encontrado
  *       409:
  *         description: Email já está em uso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Email already taken
- *                 message:
- *                   type: string
- *                   example: This email is already in use by another account
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       500:
@@ -178,11 +117,9 @@ router.put('/profile', authenticateToken, [
     }
 
     const { name, email } = req.body;
-    const users = await readUsers();
+    const user = await User.findById(req.user.id);
     
-    const userIndex = users.findIndex(u => u.id === req.user.id);
-    
-    if (userIndex === -1) {
+    if (!user) {
       return res.status(404).json({
         error: 'User not found',
         message: 'User profile not found'
@@ -190,8 +127,12 @@ router.put('/profile', authenticateToken, [
     }
 
     // Check if email is already taken by another user
-    if (email && email !== users[userIndex].email) {
-      const emailExists = users.some(u => u.email === email && u.id !== req.user.id);
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ 
+        email, 
+        _id: { $ne: req.user.id } 
+      });
+      
       if (emailExists) {
         return res.status(409).json({
           error: 'Email already taken',
@@ -201,20 +142,19 @@ router.put('/profile', authenticateToken, [
     }
 
     // Update user profile
-    if (name) users[userIndex].name = name;
-    if (email) users[userIndex].email = email;
-    users[userIndex].updatedAt = new Date().toISOString();
+    if (name) user.name = name;
+    if (email) user.email = email;
 
-    await writeUsers(users);
+    await user.save();
 
     res.json({
       message: 'Profile updated successfully',
       user: {
-        id: users[userIndex].id,
-        email: users[userIndex].email,
-        name: users[userIndex].name,
-        role: users[userIndex].role,
-        updatedAt: users[userIndex].updatedAt
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        updatedAt: user.updatedAt
       }
     });
 
@@ -249,43 +189,18 @@ router.put('/profile', authenticateToken, [
  *             properties:
  *               currentPassword:
  *                 type: string
- *                 description: Senha atual do usuário
- *                 example: senha123
  *               newPassword:
  *                 type: string
  *                 minLength: 6
- *                 description: Nova senha (mínimo 6 caracteres)
- *                 example: novaSenha456
  *               confirmPassword:
  *                 type: string
- *                 description: Confirmação da nova senha
- *                 example: novaSenha456
  *     responses:
  *       200:
  *         description: Senha alterada com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Password changed successfully
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       401:
- *         description: Senha atual incorreta ou não autorizado
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Invalid password
- *                 message:
- *                   type: string
- *                   example: Current password is incorrect
+ *         description: Senha atual incorreta
  *       404:
  *         description: Usuário não encontrado
  *       500:
@@ -318,11 +233,9 @@ router.put('/change-password', authenticateToken, [
     }
 
     const { currentPassword, newPassword } = req.body;
-    const users = await readUsers();
+    const user = await User.findById(req.user.id).select('+password');
     
-    const userIndex = users.findIndex(u => u.id === req.user.id);
-    
-    if (userIndex === -1) {
+    if (!user) {
       return res.status(404).json({
         error: 'User not found',
         message: 'User profile not found'
@@ -330,7 +243,7 @@ router.put('/change-password', authenticateToken, [
     }
 
     // Verify current password
-    const isValidPassword = await bcrypt.compare(currentPassword, users[userIndex].password);
+    const isValidPassword = await user.comparePassword(currentPassword);
     if (!isValidPassword) {
       return res.status(401).json({
         error: 'Invalid password',
@@ -338,15 +251,9 @@ router.put('/change-password', authenticateToken, [
       });
     }
 
-    // Hash new password
-    const saltRounds = 12;
-    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
-
-    // Update password
-    users[userIndex].password = hashedNewPassword;
-    users[userIndex].updatedAt = new Date().toISOString();
-
-    await writeUsers(users);
+    // Update password (will be hashed automatically by middleware)
+    user.password = newPassword;
+    await user.save();
 
     res.json({
       message: 'Password changed successfully'
@@ -381,34 +288,13 @@ router.put('/change-password', authenticateToken, [
  *             properties:
  *               password:
  *                 type: string
- *                 description: Senha atual para confirmar a exclusão
- *                 example: senha123
  *     responses:
  *       200:
  *         description: Conta deletada com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Account deleted successfully
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       401:
- *         description: Senha incorreta ou não autorizado
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Invalid password
- *                 message:
- *                   type: string
- *                   example: Password is incorrect
+ *         description: Senha incorreta
  *       404:
  *         description: Usuário não encontrado
  *       500:
@@ -431,11 +317,9 @@ router.delete('/account', authenticateToken, [
     }
 
     const { password } = req.body;
-    const users = await readUsers();
+    const user = await User.findById(req.user.id).select('+password');
     
-    const userIndex = users.findIndex(u => u.id === req.user.id);
-    
-    if (userIndex === -1) {
+    if (!user) {
       return res.status(404).json({
         error: 'User not found',
         message: 'User account not found'
@@ -443,7 +327,7 @@ router.delete('/account', authenticateToken, [
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, users[userIndex].password);
+    const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
       return res.status(401).json({
         error: 'Invalid password',
@@ -451,12 +335,12 @@ router.delete('/account', authenticateToken, [
       });
     }
 
-    // Remove user from array
-    users.splice(userIndex, 1);
-    await writeUsers(users);
+    // Delete user's t-shirt designs and uploads
+    await Tshirt.deleteMany({ userId: user._id });
+    await Upload.deleteMany({ uploadedBy: user._id });
 
-    // TODO: Also delete user's t-shirt designs and uploaded images
-    // This would be implemented here in a real application
+    // Delete user
+    await User.findByIdAndDelete(user._id);
 
     res.json({
       message: 'Account deleted successfully'
@@ -483,35 +367,6 @@ router.delete('/account', authenticateToken, [
  *     responses:
  *       200:
  *         description: Estatísticas recuperadas com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 stats:
- *                   type: object
- *                   properties:
- *                     designsCreated:
- *                       type: integer
- *                       description: Número total de designs criados
- *                       example: 15
- *                     imagesUploaded:
- *                       type: integer
- *                       description: Número total de imagens enviadas
- *                       example: 8
- *                     publicDesigns:
- *                       type: integer
- *                       description: Número de designs públicos
- *                       example: 5
- *                     totalStorageUsed:
- *                       type: number
- *                       description: Espaço total usado em bytes
- *                       example: 2048576
- *                     memberSince:
- *                       type: string
- *                       format: date-time
- *                       description: Data de criação da conta
- *                       example: 2024-01-15T10:30:00.000Z
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       500:
@@ -520,43 +375,31 @@ router.delete('/account', authenticateToken, [
 // GET /api/user/stats
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
-    // Read user's t-shirts
-    const tshirtsFile = path.join(__dirname, '../../data/tshirts.json');
-    let userTshirts = [];
+    const user = await User.findById(req.user.id);
     
-    try {
-      const tshirtsData = await fs.readFile(tshirtsFile, 'utf8');
-      const tshirts = JSON.parse(tshirtsData);
-      userTshirts = tshirts.filter(t => t.userId === req.user.id);
-    } catch (error) {
-      if (error.code !== 'ENOENT') {
-        throw error;
-      }
-      // No t-shirts file exists yet
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+        message: 'User not found'
+      });
     }
 
-    // Read user's uploads
-    const uploadsFile = path.join(__dirname, '../../data/uploads.json');
-    let userUploads = [];
+    // Get user's t-shirts
+    const userTshirts = await Tshirt.find({ userId: req.user.id });
     
-    try {
-      const uploadsData = await fs.readFile(uploadsFile, 'utf8');
-      const uploads = JSON.parse(uploadsData);
-      userUploads = uploads.filter(u => u.uploadedBy === req.user.id);
-    } catch (error) {
-      if (error.code !== 'ENOENT') {
-        throw error;
-      }
-      // No uploads file exists yet
-    }
+    // Get user's uploads
+    const userUploads = await Upload.find({ uploadedBy: req.user.id });
+
+    // Calculate total storage used
+    const totalStorageUsed = userUploads.reduce((total, upload) => total + upload.size, 0);
 
     res.json({
       stats: {
         designsCreated: userTshirts.length,
         imagesUploaded: userUploads.length,
         publicDesigns: userTshirts.filter(t => t.isPublic).length,
-        totalStorageUsed: userUploads.reduce((total, upload) => total + upload.size, 0),
-        memberSince: req.user.createdAt || new Date().toISOString()
+        totalStorageUsed,
+        memberSince: user.createdAt
       }
     });
 

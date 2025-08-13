@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
-const fs = require('fs').promises;
-const path = require('path');
+const { User } = require('../models');
 
 // Middleware para verificar JWT token
 const authenticateToken = (req, res, next) => {
@@ -46,9 +45,7 @@ const optionalAuth = (req, res, next) => {
 // Middleware para verificar se é admin
 const requireAdmin = async (req, res, next) => {
   try {
-    const usersData = await fs.readFile(path.join(__dirname, '../../data/users.json'), 'utf8');
-    const users = JSON.parse(usersData);
-    const user = users.find(u => u.id === req.user.id);
+    const user = await User.findById(req.user.id);
     
     if (!user || user.role !== 'admin') {
       return res.status(403).json({
