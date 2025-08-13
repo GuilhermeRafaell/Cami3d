@@ -1,6 +1,6 @@
 // API helpers para integração com backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://capmi3d.discloud.app/api';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://capmi3d.discloud.app';
 
 export const SWAGGER_URL = `${BACKEND_URL}/`;
 
