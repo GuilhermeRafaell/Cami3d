@@ -6,6 +6,9 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
 
+// Import database connection
+const connectDB = require('./src/config/database');
+
 // Import routes
 const authRoutes = require('./src/routes/auth');
 const tshirtRoutes = require('./src/routes/tshirt');
@@ -176,7 +179,10 @@ app.use(errorHandler);
 // Start server
 const startServer = async () => {
   try {
-    // Inicializar sistema de armazenamento
+    // Conectar ao MongoDB
+    await connectDB();
+
+    // Inicializar sistema de armazenamento (para uploads)
     await initStorage();
 
     app.listen(PORT, () => {
@@ -185,6 +191,7 @@ const startServer = async () => {
       console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
       console.log(`🌐 Production Backend: ${process.env.PRODUCTION_URL}`);
       console.log(`🌐 Production Frontend: ${process.env.PRODUCTION_FRONTEND_URL}`);
+      console.log(`🗄️  MongoDB: Connected`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
       console.log(`📖 API Documentation: http://localhost:${PORT}/`);
     });

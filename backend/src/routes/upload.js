@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 const { authenticateToken } = require('../middleware/auth');
+const { Upload } = require('../models');
 
 const router = express.Router();
 
@@ -67,45 +68,15 @@ const upload = multer({
  *               image:
  *                 type: string
  *                 format: binary
- *                 description: Arquivo de imagem (.png, .jpg, .jpeg, .svg) - máximo 5MB
  *     responses:
  *       200:
  *         description: Upload realizado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Upload realizado com sucesso
- *                 file:
- *                   $ref: '#/components/schemas/Upload'
  *       400:
  *         description: Erro de validação do arquivo
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   enum:
- *                     - Nenhum arquivo foi enviado
- *                     - Formato não suportado. Use .png, .jpg ou .svg.
- *                     - Arquivo muito grande. Tamanho máximo é 5MB
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       413:
  *         description: Arquivo muito grande
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Arquivo muito grande. Tamanho máximo é 5MB
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
@@ -119,43 +90,26 @@ router.post('/image', authenticateToken, upload.single('image'), async (req, res
       });
     }
 
-    // Generate file info
-    const fileInfo = {
-      id: uuidv4(),
+    // Create upload document in MongoDB
+    const uploadDoc = new Upload({
       originalName: req.file.originalname,
       filename: req.file.filename,
       mimetype: req.file.mimetype,
       size: req.file.size,
       uploadedBy: req.user.id,
-      uploadedAt: new Date().toISOString(),
       url: `/uploads/${req.file.filename}`
-    };
+    });
 
-    // Save file info to JSON (you could use a database here)
-    const uploadsFile = path.join(__dirname, '../../data/uploads.json');
-    let uploads = [];
-    
-    try {
-      const data = await fs.readFile(uploadsFile, 'utf8');
-      uploads = JSON.parse(data);
-    } catch (error) {
-      // File doesn't exist yet, start with empty array
-      if (error.code !== 'ENOENT') {
-        throw error;
-      }
-    }
-
-    uploads.push(fileInfo);
-    await fs.writeFile(uploadsFile, JSON.stringify(uploads, null, 2));
+    await uploadDoc.save();
 
     res.status(201).json({
       message: 'Arquivo enviado com sucesso',
       file: {
-        id: fileInfo.id,
-        url: fileInfo.url,
-        originalName: fileInfo.originalName,
-        size: fileInfo.size,
-        mimetype: fileInfo.mimetype
+        id: uploadDoc._id,
+        url: uploadDoc.url,
+        originalName: uploadDoc.originalName,
+        size: uploadDoc.size,
+        mimetype: uploadDoc.mimetype
       }
     });
 
@@ -189,35 +143,19 @@ router.post('/image', authenticateToken, upload.single('image'), async (req, res
 // GET /api/upload/user-images
 router.get('/user-images', authenticateToken, async (req, res) => {
   try {
-    const uploadsFile = path.join(__dirname, '../../data/uploads.json');
-    
-    try {
-      const data = await fs.readFile(uploadsFile, 'utf8');
-      const uploads = JSON.parse(data);
-      
-      // Filter uploads by user
-      const userUploads = uploads
-        .filter(upload => upload.uploadedBy === req.user.id)
-        .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+    const uploads = await Upload.find({ uploadedBy: req.user.id })
+      .sort({ createdAt: -1 });
 
-      res.json({
-        uploads: userUploads.map(upload => ({
-          id: upload.id,
-          url: upload.url,
-          originalName: upload.originalName,
-          size: upload.size,
-          mimetype: upload.mimetype,
-          uploadedAt: upload.uploadedAt
-        }))
-      });
-    } catch (error) {
-      // Only handle file not found error, otherwise rethrow
-      if (error.code === 'ENOENT') {
-        res.json({ uploads: [] });
-      } else {
-        throw error;
-      }
-    }
+    res.json({
+      uploads: uploads.map(upload => ({
+        id: upload._id,
+        url: upload.url,
+        originalName: upload.originalName,
+        size: upload.size,
+        mimetype: upload.mimetype,
+        uploadedAt: upload.createdAt
+      }))
+    });
 
   } catch (error) {
     console.error('Error fetching user images:', error);
@@ -232,25 +170,19 @@ router.get('/user-images', authenticateToken, async (req, res) => {
 router.delete('/:imageId', authenticateToken, async (req, res) => {
   try {
     const { imageId } = req.params;
-    const uploadsFile = path.join(__dirname, '../../data/uploads.json');
     
-    const data = await fs.readFile(uploadsFile, 'utf8');
-    const uploads = JSON.parse(data);
+    const upload = await Upload.findOne({ 
+      _id: imageId, 
+      uploadedBy: req.user.id 
+    });
     
-    // Find the upload
-    const uploadIndex = uploads.findIndex(upload => 
-      upload.id === imageId && upload.uploadedBy === req.user.id
-    );
-    
-    if (uploadIndex === -1) {
+    if (!upload) {
       return res.status(404).json({
         error: 'Imagem não encontrada',
         message: 'Imagem não encontrada ou você não tem permissão para excluí-la'
       });
     }
 
-    const upload = uploads[uploadIndex];
-    
     // Delete file from filesystem
     const filePath = path.join(__dirname, '../../uploads', upload.filename);
     try {
@@ -259,9 +191,8 @@ router.delete('/:imageId', authenticateToken, async (req, res) => {
       console.error('Error deleting file from filesystem:', error);
     }
 
-    // Remove from uploads array
-    uploads.splice(uploadIndex, 1);
-    await fs.writeFile(uploadsFile, JSON.stringify(uploads, null, 2));
+    // Delete from database
+    await Upload.findByIdAndDelete(imageId);
 
     res.json({
       message: 'Imagem excluída com sucesso'
@@ -280,14 +211,11 @@ router.delete('/:imageId', authenticateToken, async (req, res) => {
 router.get('/info/:imageId', authenticateToken, async (req, res) => {
   try {
     const { imageId } = req.params;
-    const uploadsFile = path.join(__dirname, '../../data/uploads.json');
     
-    const data = await fs.readFile(uploadsFile, 'utf8');
-    const uploads = JSON.parse(data);
-    
-    const upload = uploads.find(upload => 
-      upload.id === imageId && upload.uploadedBy === req.user.id
-    );
+    const upload = await Upload.findOne({ 
+      _id: imageId, 
+      uploadedBy: req.user.id 
+    });
     
     if (!upload) {
       return res.status(404).json({
@@ -298,12 +226,12 @@ router.get('/info/:imageId', authenticateToken, async (req, res) => {
 
     res.json({
       image: {
-        id: upload.id,
+        id: upload._id,
         url: upload.url,
         originalName: upload.originalName,
         size: upload.size,
         mimetype: upload.mimetype,
-        uploadedAt: upload.uploadedAt
+        uploadedAt: upload.createdAt
       }
     });
 
