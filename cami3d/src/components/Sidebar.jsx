@@ -47,9 +47,23 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido, userToken }) {
     '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#800080'
   ]
 
+  const fonts = [
+    { name: 'Arial', value: 'Arial, sans-serif', category: 'Sans Serif' },
+    { name: 'Helvetica', value: 'Helvetica, Arial, sans-serif', category: 'Sans Serif' },
+    { name: 'Georgia', value: 'Georgia, serif', category: 'Serif' },
+    { name: 'Times New Roman', value: 'Times New Roman, serif', category: 'Serif' },
+    { name: 'Courier New', value: 'Courier New, monospace', category: 'Monospace' },
+    { name: 'Verdana', value: 'Verdana, sans-serif', category: 'Sans Serif' },
+    { name: 'Impact', value: 'Impact, sans-serif', category: 'Display' },
+    { name: 'Comic Sans MS', value: 'Comic Sans MS, cursive', category: 'Casual' },
+    { name: 'Trebuchet MS', value: 'Trebuchet MS, sans-serif', category: 'Sans Serif' },
+    { name: 'Palatino', value: 'Palatino, serif', category: 'Serif' },
+    { name: 'Lucida Console', value: 'Lucida Console, monospace', category: 'Monospace' },
+    { name: 'Brush Script MT', value: 'Brush Script MT, cursive', category: 'Script' }
+  ]
+
   const styles = [
     { id: 'crew-neck', name: 'Gola Redonda' },
-    { id: 'v-neck', name: 'Gola V' },
     { id: 'tank-top', name: 'Regata' },
     { id: 'long-sleeve', name: 'Manga Longa' }
   ]
@@ -104,41 +118,109 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido, userToken }) {
               {tshirtConfig.logo && (
                 <div className="logo-controls">
                   <label>Tamanho:</label>
-                  <input
-                    type="range"
-                    min="0.1"
-                    max="3.0"
-                    step="0.1"
-                    value={tshirtConfig.logoScale}
-                    onChange={(e) => updateConfig({ logoScale: parseFloat(e.target.value) })}
-                  />
+                  <div className="control-group">
+                    <input
+                      type="range"
+                      min="0.05"
+                      max="5.0"
+                      step="0.05"
+                      value={tshirtConfig.logoScale}
+                      onChange={(e) => updateConfig({ logoScale: parseFloat(e.target.value) })}
+                    />
+                    <input
+                      type="number"
+                      min="0.05"
+                      max="5.0"
+                      step="0.05"
+                      value={tshirtConfig.logoScale.toFixed(2)}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (value >= 0.05 && value <= 5.0) {
+                          updateConfig({ logoScale: value });
+                        }
+                      }}
+                      className="number-input"
+                    />
+                  </div>
+                  
                   <label>Posição Horizontal:</label>
-                  <input
-                    type="range"
-                    min="-1"
-                    max="1"
-                    step="0.01"
-                    value={tshirtConfig.logoPosition?.x || 0}
-                    onChange={e => updateConfig({ logoPosition: { ...tshirtConfig.logoPosition, x: parseFloat(e.target.value) } })}
-                  />
+                  <div className="control-group">
+                    <input
+                      type="range"
+                      min="-3"
+                      max="3"
+                      step="0.01"
+                      value={tshirtConfig.logoPosition?.x || 0}
+                      onChange={e => updateConfig({ logoPosition: { ...tshirtConfig.logoPosition, x: parseFloat(e.target.value) } })}
+                    />
+                    <input
+                      type="number"
+                      min="-3"
+                      max="3"
+                      step="0.01"
+                      value={(tshirtConfig.logoPosition?.x || 0).toFixed(2)}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (value >= -3 && value <= 3) {
+                          updateConfig({ logoPosition: { ...tshirtConfig.logoPosition, x: value } });
+                        }
+                      }}
+                      className="number-input"
+                    />
+                  </div>
+                  
                   <label>Posição Vertical:</label>
-                  <input
-                    type="range"
-                    min="-1"
-                    max="1"
-                    step="0.01"
-                    value={tshirtConfig.logoPosition?.y || 0}
-                    onChange={e => updateConfig({ logoPosition: { ...tshirtConfig.logoPosition, y: parseFloat(e.target.value) } })}
-                  />
+                  <div className="control-group">
+                    <input
+                      type="range"
+                      min="-2"
+                      max="2"
+                      step="0.01"
+                      value={tshirtConfig.logoPosition?.y || 0}
+                      onChange={e => updateConfig({ logoPosition: { ...tshirtConfig.logoPosition, y: parseFloat(e.target.value) } })}
+                    />
+                    <input
+                      type="number"
+                      min="-2"
+                      max="2"
+                      step="0.01"
+                      value={(tshirtConfig.logoPosition?.y || 0).toFixed(2)}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (value >= -2 && value <= 2) {
+                          updateConfig({ logoPosition: { ...tshirtConfig.logoPosition, y: value } });
+                        }
+                      }}
+                      className="number-input"
+                    />
+                  </div>
+                  
                   <label>Rotação:</label>
-                  <input
-                    type="range"
-                    min="-180"
-                    max="180"
-                    step="1"
-                    value={tshirtConfig.logoRotation || 0}
-                    onChange={e => updateConfig({ logoRotation: parseFloat(e.target.value) })}
-                  />
+                  <div className="control-group">
+                    <input
+                      type="range"
+                      min="-360"
+                      max="360"
+                      step="1"
+                      value={tshirtConfig.logoRotation || 0}
+                      onChange={e => updateConfig({ logoRotation: parseFloat(e.target.value) })}
+                    />
+                    <input
+                      type="number"
+                      min="-360"
+                      max="360"
+                      step="1"
+                      value={tshirtConfig.logoRotation || 0}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (value >= -360 && value <= 360) {
+                          updateConfig({ logoRotation: value });
+                        }
+                      }}
+                      className="number-input angle-input"
+                    />
+                    <span className="unit">°</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -191,52 +273,150 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido, userToken }) {
               <>
                 <div className="section">
                   <label>Cor do Texto:</label>
-                  <input
-                    type="color"
-                    value={tshirtConfig.textColor}
-                    onChange={(e) => updateConfig({ textColor: e.target.value })}
-                    className="color-input"
-                  />
+                  <div className="upload-area">
+                    <input
+                      type="color"
+                      value={tshirtConfig.textColor}
+                      onChange={(e) => updateConfig({ textColor: e.target.value })}
+                      className="color-input"
+                    />
+                    <button 
+                      onClick={() => updateConfig({ text: '' })}
+                      className="remove-btn"
+                    >
+                      <X size={16} />
+                      Remover
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="section">
+                  <label>Fonte:</label>
+                  <select
+                    value={tshirtConfig.textFont || fonts[0].value}
+                    onChange={(e) => updateConfig({ textFont: e.target.value })}
+                    className="font-select"
+                  >
+                    {fonts.map((font) => (
+                      <option 
+                        key={font.value} 
+                        value={font.value}
+                        style={{ fontFamily: font.value }}
+                      >
+                        {font.name} ({font.category})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="font-preview" style={{ fontFamily: tshirtConfig.textFont || fonts[0].value }}>
+                    {tshirtConfig.text || 'Texto de exemplo'}
+                  </div>
                 </div>
                 <div className="section">
                   <label>Tamanho:</label>
-                  <input
-                    type="range"
-                    min="0.05"
-                    max="0.5"
-                    step="0.01"
-                    value={tshirtConfig.textSize}
-                    onChange={(e) => updateConfig({ textSize: parseFloat(e.target.value) })}
-                  />
+                  <div className="control-group">
+                    <input
+                      type="range"
+                      min="0.02"
+                      max="0.8"
+                      step="0.01"
+                      value={tshirtConfig.textSize}
+                      onChange={(e) => updateConfig({ textSize: parseFloat(e.target.value) })}
+                    />
+                    <input
+                      type="number"
+                      min="0.02"
+                      max="0.8"
+                      step="0.01"
+                      value={tshirtConfig.textSize.toFixed(2)}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (value >= 0.02 && value <= 0.8) {
+                          updateConfig({ textSize: value });
+                        }
+                      }}
+                      className="number-input"
+                    />
+                  </div>
                 </div>
                 <div className="section">
                   <label>Posição Horizontal:</label>
-                  <input
-                    type="range"
-                    min="-1"
-                    max="1"
-                    step="0.01"
-                    value={tshirtConfig.textPosition?.x || 0}
-                    onChange={e => updateConfig({ textPosition: { ...tshirtConfig.textPosition, x: parseFloat(e.target.value) } })}
-                  />
+                  <div className="control-group">
+                    <input
+                      type="range"
+                      min="-2"
+                      max="2"
+                      step="0.01"
+                      value={tshirtConfig.textPosition?.x || -1.40}
+                      onChange={e => updateConfig({ textPosition: { ...tshirtConfig.textPosition, x: parseFloat(e.target.value) } })}
+                    />
+                    <input
+                      type="number"
+                      min="-2"
+                      max="2"
+                      step="0.01"
+                      value={(tshirtConfig.textPosition?.x || -1.40).toFixed(2)}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (value >= -2 && value <= 2) {
+                          updateConfig({ textPosition: { ...tshirtConfig.textPosition, x: value } });
+                        }
+                      }}
+                      className="number-input"
+                    />
+                  </div>
+                  
                   <label>Posição Vertical:</label>
-                  <input
-                    type="range"
-                    min="-1"
-                    max="1"
-                    step="0.01"
-                    value={tshirtConfig.textPosition?.y || 0}
-                    onChange={e => updateConfig({ textPosition: { ...tshirtConfig.textPosition, y: parseFloat(e.target.value) } })}
-                  />
+                  <div className="control-group">
+                    <input
+                      type="range"
+                      min="-2"
+                      max="2"
+                      step="0.01"
+                      value={tshirtConfig.textPosition?.y || 0.60}
+                      onChange={e => updateConfig({ textPosition: { ...tshirtConfig.textPosition, y: parseFloat(e.target.value) } })}
+                    />
+                    <input
+                      type="number"
+                      min="-2"
+                      max="2"
+                      step="0.01"
+                      value={(tshirtConfig.textPosition?.y || 0.60).toFixed(2)}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (value >= -2 && value <= 2) {
+                          updateConfig({ textPosition: { ...tshirtConfig.textPosition, y: value } });
+                        }
+                      }}
+                      className="number-input"
+                    />
+                  </div>
+                  
                   <label>Rotação:</label>
-                  <input
-                    type="range"
-                    min="-180"
-                    max="180"
-                    step="1"
-                    value={tshirtConfig.textRotation || 0}
-                    onChange={e => updateConfig({ textRotation: parseFloat(e.target.value) })}
-                  />
+                  <div className="control-group">
+                    <input
+                      type="range"
+                      min="-360"
+                      max="360"
+                      step="1"
+                      value={tshirtConfig.textRotation || -180}
+                      onChange={e => updateConfig({ textRotation: parseFloat(e.target.value) })}
+                    />
+                    <input
+                      type="number"
+                      min="-360"
+                      max="360"
+                      step="1"
+                      value={tshirtConfig.textRotation || -180}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (value >= -360 && value <= 360) {
+                          updateConfig({ textRotation: value });
+                        }
+                      }}
+                      className="number-input angle-input"
+                    />
+                    <span className="unit">°</span>
+                  </div>
                 </div>
               </>
             )}
@@ -252,9 +432,11 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido, userToken }) {
             logoPosition: { x: 0, y: 0 },
             logoScale: 1,
             text: '',
-            textPosition: { x: 0, y: -0.3 },
+            textPosition: { x: -1.40, y: 0.60 },
             textColor: '#000000',
             textSize: 0.1,
+            textFont: 'Arial, sans-serif',
+            textRotation: -180,
             style: 'crew-neck',
             modelType: 'procedural',
             externalModel: null,

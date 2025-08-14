@@ -275,6 +275,113 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: pointer;
 }
 
+/* Valores dos ranges */
+.range-value {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: #667eea;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Grupo de controles com slider e input numérico */
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.control-group input[type="range"] {
+  flex: 1;
+}
+
+.number-input {
+  width: 70px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  text-align: center;
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.number-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.angle-input {
+  width: 60px;
+}
+
+.unit {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 500;
+  min-width: 15px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.section label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Seletor de fonte */
+.font-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.5rem;
+}
+
+.font-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.font-select option {
+  padding: 0.5rem;
+}
+
+/* Preview da fonte */
+.font-preview {
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 1rem;
+  color: #333;
+  margin-top: 0.5rem;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  word-break: break-word;
+}
+
 /* Paleta de cores */
 .color-palette {
   display: grid;
@@ -732,6 +839,25 @@ input[type="range"]::-webkit-slider-thumb {
     font-size: 0.9rem;
   }
   
+  /* Responsividade para controles numéricos */
+  .control-group {
+    gap: 0.25rem;
+  }
+  
+  .number-input {
+    width: 60px;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .angle-input {
+    width: 50px;
+  }
+  
+  .unit {
+    font-size: 0.75rem;
+  }
+  
   .viewer-container {
     height: 55vh;
     order: 1;
@@ -788,6 +914,18 @@ input[type="range"]::-webkit-slider-thumb {
   .reset-btn, .finalize-btn {
     padding: 0.75rem;
     font-size: 0.85rem;
+  }
+  
+  /* Responsividade para seletor de fonte */
+  .font-select {
+    font-size: 0.85rem;
+    padding: 0.4rem;
+  }
+  
+  .font-preview {
+    font-size: 0.9rem;
+    padding: 0.6rem;
+    min-height: 35px;
   }
 }
 
@@ -861,6 +999,18 @@ input[type="range"]::-webkit-slider-thumb {
   .reset-btn, .finalize-btn {
     padding: 0.6rem;
     font-size: 0.8rem;
+  }
+  
+  /* Responsividade para fonte em telas muito pequenas */
+  .font-select {
+    font-size: 0.8rem;
+    padding: 0.35rem;
+  }
+  
+  .font-preview {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    min-height: 30px;
   }
   
   .modal-content {

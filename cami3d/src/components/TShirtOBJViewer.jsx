@@ -64,15 +64,32 @@ function ShirtModel({ config }) {
           const logoY = (config.logoPosition?.y || 0) * -300 + canvas.height / 2;
           const logoSize = 150 * logoScale;
           
+          // Salvar estado do contexto para o logo
+          ctx.save();
+          
+          // Espelhar horizontalmente para corrigir orientação do logo
+          ctx.scale(-1, 1);
+          
+          // Aplicar rotação do logo se especificada
+          if (config.logoRotation) {
+            ctx.translate(-logoX, logoY);
+            ctx.rotate((-config.logoRotation * Math.PI) / 180); // Inverte rotação para compensar espelhamento
+            ctx.translate(logoX, -logoY);
+          }
+          
+          // Desenhar logo (posição X invertida devido ao espelhamento)
           ctx.drawImage(
             img, 
-            logoX - logoSize / 2, 
+            -logoX - logoSize / 2,  // X invertido devido ao espelhamento
             logoY - logoSize / 2, 
             logoSize, 
             logoSize
           );
           
-          console.log(`Logo aplicado na posição (${logoX}, ${logoY}) com tamanho ${logoSize}px`);
+          // Restaurar estado do contexto
+          ctx.restore();
+          
+          console.log(`Logo aplicado na posição (${logoX}, ${logoY}) com tamanho ${logoSize}px e rotação ${config.logoRotation || 0}° (corrigido espelhamento)`);
         } catch (error) {
           console.warn('Erro ao carregar logo:', error.message);
         }
@@ -82,25 +99,42 @@ function ShirtModel({ config }) {
       if (config.text) {
         const fontSize = Math.max(32, (config.textSize || 0.1) * 400);
         
+        // Calcular posição do texto
+        const textX = (config.textPosition?.x || -1.40) * 200 + canvas.width / 2;
+        const textY = (config.textPosition?.y || 0.60) * -200 + canvas.height / 2;
+        
+        // Salvar estado do contexto
+        ctx.save();
+        
+        // Espelhar horizontalmente para corrigir orientação
+        ctx.scale(-1, 1);
+        
+        // Aplicar rotação se especificada (ajustada para orientação corrigida)
+        if (config.textRotation) {
+          ctx.translate(-textX, textY);
+          ctx.rotate((-config.textRotation * Math.PI) / 180); // Inverte rotação para compensar espelhamento
+          ctx.translate(textX, -textY);
+        }
+        
         // Configurar fonte com fallbacks
-        ctx.font = `bold ${fontSize}px "Arial", "Helvetica", sans-serif`;
+        const selectedFont = config.textFont || 'Arial, sans-serif';
+        ctx.font = `bold ${fontSize}px ${selectedFont}`;
         ctx.fillStyle = config.textColor || '#000000';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        // Calcular posição do texto
-        const textX = (config.textPosition?.x || 0) * 200 + canvas.width / 2;
-        const textY = (config.textPosition?.y || -0.3) * -200 + canvas.height / 2;
-        
-        // Desenhar contorno para melhor legibilidade
+        // Desenhar contorno para melhor legibilidade (posição X invertida devido ao espelhamento)
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = Math.max(2, fontSize / 20);
-        ctx.strokeText(config.text, textX, textY);
+        ctx.strokeText(config.text, -textX, textY);
         
-        // Desenhar texto principal
-        ctx.fillText(config.text, textX, textY);
+        // Desenhar texto principal (posição X invertida devido ao espelhamento)
+        ctx.fillText(config.text, -textX, textY);
         
-        console.log(`Texto "${config.text}" aplicado na posição (${textX}, ${textY}) com tamanho ${fontSize}px`);
+        // Restaurar estado do contexto
+        ctx.restore();
+        
+        console.log(`Texto "${config.text}" aplicado na posição (${textX}, ${textY}) com tamanho ${fontSize}px e rotação ${config.textRotation || -180}° (corrigido espelhamento)`);
       }
     } catch (error) {
       console.error('Erro ao processar canvas:', error);
