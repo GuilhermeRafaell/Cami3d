@@ -1,0 +1,16 @@
+node_modules
+package-lock.json
+postman-collection.json
+readme.md
+*.sh
+/logs
+/tests
+/cami3d
+setup.sh
+stop.sh
+test.sh
+start.sh
+logs.sh
+backend
+/dist
+
