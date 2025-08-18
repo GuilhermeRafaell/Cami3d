@@ -1,3 +1,6 @@
+// Rotas de autenticação e autorização
+// Inclui: registro, login, recuperação de senha, verificação de token
+
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
@@ -31,6 +34,7 @@ const router = express.Router();
  *       409:
  *         description: Email já existe
  */
+// Registrar novo usuário
 // POST /api/auth/register
 router.post('/register', [
   body('email')
@@ -132,6 +136,7 @@ router.post('/register', [
  *       401:
  *         description: Credenciais incorretas
  */
+// Fazer login de usuário
 // POST /api/auth/login
 router.post('/login', [
   body('email')
@@ -207,6 +212,7 @@ router.post('/login', [
   }
 });
 
+// Verificar se token é válido
 // POST /api/auth/verify-token
 router.post('/verify-token', authenticateToken, async (req, res) => {
   try {
@@ -237,6 +243,7 @@ router.post('/verify-token', authenticateToken, async (req, res) => {
   }
 });
 
+// Renovar token de acesso
 // POST /api/auth/refresh-token
 router.post('/refresh-token', authenticateToken, async (req, res) => {
   try {
@@ -301,6 +308,7 @@ router.post('/refresh-token', authenticateToken, async (req, res) => {
  *       404:
  *         description: Email não encontrado
  */
+// Recuperar senha por email
 // POST /api/auth/forgot-password  
 router.post('/forgot-password', [
   body('email')

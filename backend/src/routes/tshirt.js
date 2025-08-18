@@ -1,3 +1,6 @@
+// Rotas para gerenciamento de designs de camisetas
+// Inclui: salvar, editar, deletar, listar, galeria pública
+
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
@@ -5,7 +8,7 @@ const { Tshirt, User } = require('../models');
 
 const router = express.Router();
 
-// Validation rules
+// Regras de validação para designs de camisetas
 const tshirtValidation = [
   body('color')
     .matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
@@ -92,6 +95,7 @@ const tshirtValidation = [
  *       401:
  *         description: Não autorizado
  */
+// Salvar novo design de camiseta
 // POST /api/tshirt/save
 router.post('/save', authenticateToken, tshirtValidation, async (req, res) => {
   try {
@@ -182,6 +186,7 @@ router.post('/save', authenticateToken, tshirtValidation, async (req, res) => {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
+// Listar meus designs de camisetas
 // GET /api/tshirt/my-designs
 router.get('/my-designs', authenticateToken, async (req, res) => {
   try {
@@ -234,6 +239,7 @@ router.get('/my-designs', authenticateToken, async (req, res) => {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
+// Obter design específico por ID
 // GET /api/tshirt/:id
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
@@ -282,6 +288,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
   }
 });
 
+// Atualizar design de camiseta
 // PUT /api/tshirt/:id
 router.put('/:id', authenticateToken, tshirtValidation, async (req, res) => {
   try {
@@ -334,6 +341,7 @@ router.put('/:id', authenticateToken, tshirtValidation, async (req, res) => {
   }
 });
 
+// Deletar design de camiseta
 // DELETE /api/tshirt/:id
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
@@ -362,6 +370,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Duplicar design de camiseta
 // POST /api/tshirt/:id/duplicate
 router.post('/:id/duplicate', authenticateToken, async (req, res) => {
   try {
@@ -441,6 +450,7 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
+// Galeria pública de designs
 // GET /api/tshirt/public/gallery
 router.get('/public/gallery', async (req, res) => {
   try {

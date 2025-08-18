@@ -1,3 +1,6 @@
+// Rotas para gerenciamento de usuários
+// Inclui: perfil, edição, alteração de senha, estatísticas
+
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
@@ -25,6 +28,7 @@ const router = express.Router();
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
+// Obter perfil do usuário logado
 // GET /api/user/profile
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
@@ -93,6 +97,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
+// Atualizar perfil do usuário
 // PUT /api/user/profile
 router.put('/profile', authenticateToken, [
   body('name')
@@ -206,6 +211,7 @@ router.put('/profile', authenticateToken, [
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
+// Alterar senha do usuário
 // PUT /api/user/change-password
 router.put('/change-password', authenticateToken, [
   body('currentPassword')
@@ -300,6 +306,7 @@ router.put('/change-password', authenticateToken, [
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
+// Deletar conta do usuário
 // DELETE /api/user/account
 router.delete('/account', authenticateToken, [
   body('password')
@@ -372,6 +379,7 @@ router.delete('/account', authenticateToken, [
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
+// Obter estatísticas do usuário
 // GET /api/user/stats
 router.get('/stats', authenticateToken, async (req, res) => {
   try {

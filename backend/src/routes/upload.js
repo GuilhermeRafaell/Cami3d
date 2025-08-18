@@ -1,3 +1,6 @@
+// Rotas para upload e gerenciamento de arquivos
+// Inclui: upload de imagens, listagem, informações, exclusão
+
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -8,7 +11,7 @@ const { Upload } = require('../models');
 
 const router = express.Router();
 
-// Configure multer for file uploads
+// Configuração do multer para upload de arquivos
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
     const uploadDir = path.join(__dirname, '../../uploads');
@@ -20,13 +23,13 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Generate unique filename
+    // Gerar nome único para o arquivo
     const uniqueName = `${uuidv4()}_${Date.now()}${path.extname(file.originalname)}`;
     cb(null, uniqueName);
   }
 });
 
-// File filter
+// Filtro de tipos de arquivo permitidos
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/jpeg', 'image/png', 'image/svg+xml'];
   
@@ -80,6 +83,7 @@ const upload = multer({
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
+// Upload de nova imagem
 // POST /api/upload/image
 router.post('/image', authenticateToken, upload.single('image'), async (req, res) => {
   try {
@@ -140,6 +144,7 @@ router.post('/image', authenticateToken, upload.single('image'), async (req, res
   }
 });
 
+// Listar imagens do usuário
 // GET /api/upload/user-images
 router.get('/user-images', authenticateToken, async (req, res) => {
   try {
@@ -166,6 +171,7 @@ router.get('/user-images', authenticateToken, async (req, res) => {
   }
 });
 
+// Deletar imagem específica
 // DELETE /api/upload/:imageId
 router.delete('/:imageId', authenticateToken, async (req, res) => {
   try {
@@ -207,6 +213,7 @@ router.delete('/:imageId', authenticateToken, async (req, res) => {
   }
 });
 
+// Obter informações de uma imagem
 // GET /api/upload/info/:imageId
 router.get('/info/:imageId', authenticateToken, async (req, res) => {
   try {
