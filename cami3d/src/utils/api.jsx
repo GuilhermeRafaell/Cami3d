@@ -1,10 +1,10 @@
-// API helpers para integração com backend
+// Funções para comunicação com a API do backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://capmi3d.discloud.app/api';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://capmi3d.discloud.app';
 
 export const SWAGGER_URL = `${BACKEND_URL}/`;
 
-// Helper para lidar com erros de resposta
+// Processa respostas da API e trata erros
 const handleResponse = async (response) => {
   if (!response.ok) {
     let errorMessage = 'Erro na requisição';
@@ -13,7 +13,7 @@ const handleResponse = async (response) => {
       const error = await response.json();
       errorMessage = error.message || error.error || errorMessage;
     } catch {
-      // Se não conseguir fazer parse do JSON, usar mensagem padrão
+      // Se não conseguir ler o JSON de erro
       errorMessage = `Erro ${response.status}: ${response.statusText}`;
     }
     
@@ -23,7 +23,7 @@ const handleResponse = async (response) => {
   return response.json();
 };
 
-// Helper para fazer requisições com retry automático
+// Faz requisições com tentativas automáticas em caso de falha
 const fetchWithRetry = async (url, options, retries = 1) => {
   try {
     const response = await fetch(url, options);
@@ -38,7 +38,7 @@ const fetchWithRetry = async (url, options, retries = 1) => {
   }
 };
 
-// Helper para fazer upload de imagem
+// Envia uma imagem para o servidor
 export const uploadImage = async (file, token) => {
   const formData = new FormData();
   formData.append('image', file);
@@ -52,7 +52,7 @@ export const uploadImage = async (file, token) => {
   });
 };
 
-// Helper para salvar design
+// Salva um design de camiseta no servidor
 export const saveDesign = async (designData, token) => {
   return fetchWithRetry(`${API_BASE_URL}/tshirt/save`, {
     method: 'POST',
@@ -64,7 +64,7 @@ export const saveDesign = async (designData, token) => {
   });
 };
 
-// Helper para login
+// Faz login do usuário
 export const login = async (email, password) => {
   return fetchWithRetry(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
@@ -75,7 +75,7 @@ export const login = async (email, password) => {
   });
 };
 
-// Helper para registro
+// Registra um novo usuário
 export const register = async (email, password, name) => {
   return fetchWithRetry(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
@@ -86,7 +86,7 @@ export const register = async (email, password, name) => {
   });
 };
 
-// Helper para recuperação de senha
+// Solicita recuperação de senha por email
 export const forgotPassword = async (email) => {
   return fetchWithRetry(`${API_BASE_URL}/auth/forgot-password`, {
     method: 'POST',
@@ -97,7 +97,7 @@ export const forgotPassword = async (email) => {
   });
 };
 
-// Helper para verificar token
+// Verifica se o token de acesso é válido
 export const verifyToken = async (token) => {
   return fetchWithRetry(`${API_BASE_URL}/auth/verify-token`, {
     method: 'POST',
@@ -107,7 +107,7 @@ export const verifyToken = async (token) => {
   });
 };
 
-// Helper para refresh token
+// Renova o token de acesso
 export const refreshToken = async (token) => {
   return fetchWithRetry(`${API_BASE_URL}/auth/refresh-token`, {
     method: 'POST',
@@ -117,7 +117,7 @@ export const refreshToken = async (token) => {
   });
 };
 
-// Helper para buscar meus designs
+// Busca todos os designs do usuário logado
 export const getMyDesigns = async (token) => {
   return fetchWithRetry(`${API_BASE_URL}/tshirt/my-designs`, {
     headers: {
@@ -126,7 +126,7 @@ export const getMyDesigns = async (token) => {
   });
 };
 
-// Helper para buscar um design específico
+// Busca um design específico pelo ID
 export const getDesign = async (designId, token = null) => {
   const headers = {};
   if (token) {
@@ -138,7 +138,7 @@ export const getDesign = async (designId, token = null) => {
   });
 };
 
-// Helper para atualizar design
+// Atualiza um design existente
 export const updateDesign = async (designId, designData, token) => {
   return fetchWithRetry(`${API_BASE_URL}/tshirt/${designId}`, {
     method: 'PUT',
@@ -150,7 +150,7 @@ export const updateDesign = async (designId, designData, token) => {
   });
 };
 
-// Helper para deletar design
+// Remove um design do usuário
 export const deleteDesign = async (designId, token) => {
   return fetchWithRetry(`${API_BASE_URL}/tshirt/${designId}`, {
     method: 'DELETE',
@@ -160,7 +160,7 @@ export const deleteDesign = async (designId, token) => {
   });
 };
 
-// Helper para duplicar design
+// Cria uma cópia de um design existente
 export const duplicateDesign = async (designId, token) => {
   return fetchWithRetry(`${API_BASE_URL}/tshirt/${designId}/duplicate`, {
     method: 'POST',
@@ -170,12 +170,12 @@ export const duplicateDesign = async (designId, token) => {
   });
 };
 
-// Helper para buscar galeria pública
+// Busca designs públicos na galeria
 export const getPublicGallery = async (page = 1, limit = 12) => {
   return fetchWithRetry(`${API_BASE_URL}/tshirt/public/gallery?page=${page}&limit=${limit}`);
 };
 
-// Helper para buscar imagens do usuário
+// Busca todas as imagens do usuário
 export const getUserImages = async (token) => {
   return fetchWithRetry(`${API_BASE_URL}/upload/user-images`, {
     headers: {
@@ -184,7 +184,7 @@ export const getUserImages = async (token) => {
   });
 };
 
-// Helper para deletar imagem
+// Remove uma imagem do usuário
 export const deleteImage = async (imageId, token) => {
   return fetchWithRetry(`${API_BASE_URL}/upload/${imageId}`, {
     method: 'DELETE',
@@ -194,7 +194,7 @@ export const deleteImage = async (imageId, token) => {
   });
 };
 
-// Helper para buscar informações da imagem
+// Busca detalhes de uma imagem específica
 export const getImageInfo = async (imageId, token) => {
   return fetchWithRetry(`${API_BASE_URL}/upload/info/${imageId}`, {
     headers: {
@@ -203,7 +203,7 @@ export const getImageInfo = async (imageId, token) => {
   });
 };
 
-// Helpers para gerenciamento de usuário
+// Busca os dados do perfil do usuário logado
 export const getUserProfile = async (token) => {
   return fetchWithRetry(`${API_BASE_URL}/user/profile`, {
     headers: {
@@ -212,6 +212,7 @@ export const getUserProfile = async (token) => {
   });
 };
 
+// Atualiza os dados do perfil do usuário
 export const updateUserProfile = async (profileData, token) => {
   return fetchWithRetry(`${API_BASE_URL}/user/profile`, {
     method: 'PUT',
@@ -223,6 +224,7 @@ export const updateUserProfile = async (profileData, token) => {
   });
 };
 
+// Altera a senha do usuário
 export const changePassword = async (passwordData, token) => {
   return fetchWithRetry(`${API_BASE_URL}/user/change-password`, {
     method: 'PUT',
@@ -234,6 +236,7 @@ export const changePassword = async (passwordData, token) => {
   });
 };
 
+// Remove a conta do usuário
 export const deleteAccount = async (password, token) => {
   return fetchWithRetry(`${API_BASE_URL}/user/account`, {
     method: 'DELETE',
@@ -245,6 +248,7 @@ export const deleteAccount = async (password, token) => {
   });
 };
 
+// Busca estatísticas do usuário (número de designs, uploads, etc.)
 export const getUserStats = async (token) => {
   return fetchWithRetry(`${API_BASE_URL}/user/stats`, {
     headers: {
@@ -253,12 +257,12 @@ export const getUserStats = async (token) => {
   });
 };
 
-// Helper para health check
+// Verifica se o servidor está funcionando
 export const healthCheck = async () => {
   return fetchWithRetry(`${BACKEND_URL}/health`);
 };
 
-// Utilitários para token
+// Verifica se o token JWT expirou
 export const isTokenExpired = (token) => {
   if (!token) return true;
   
@@ -271,6 +275,7 @@ export const isTokenExpired = (token) => {
   }
 };
 
+// Extrai as informações do token JWT (payload)
 export const getTokenPayload = (token) => {
   if (!token) return null;
   
