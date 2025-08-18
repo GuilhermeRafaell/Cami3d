@@ -1,3 +1,9 @@
+// ===================================================================
+// CAMI3D BACKEND SERVER - SERVIDOR PRINCIPAL DA API
+// ===================================================================
+// Este arquivo configura e inicializa o servidor Express da aplicação Cami3D
+// Inclui configurações de segurança, CORS, rate limiting, rotas e documentação
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -6,113 +12,160 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
 
-// Import database connection
+// ===================================================================
+// IMPORTAÇÕES - CONFIGURAÇÕES E DEPENDÊNCIAS
+// ===================================================================
+
+// Conexão com banco de dados MongoDB
 const connectDB = require('./src/config/database');
 
-// Import routes
-const authRoutes = require('./src/routes/auth');
-const tshirtRoutes = require('./src/routes/tshirt');
-const uploadRoutes = require('./src/routes/upload');
-const userRoutes = require('./src/routes/user');
+// Rotas da API organizadas por funcionalidade
+const authRoutes = require('./src/routes/auth');        // Autenticação e autorização
+const tshirtRoutes = require('./src/routes/tshirt');    // Gerenciamento de designs de camisetas
+const uploadRoutes = require('./src/routes/upload');    // Upload e gerenciamento de imagens
+const userRoutes = require('./src/routes/user');        // Gerenciamento de usuários
 
-// Import middleware
-const errorHandler = require('./src/middleware/errorHandler');
-const { initStorage } = require('./src/middleware/initStorage');
-const { swaggerSpec, swaggerUi, swaggerUiOptions } = require('./src/config/swagger');
+// Middlewares personalizados e configurações
+const errorHandler = require('./src/middleware/errorHandler');           // Tratamento global de erros
+const { initStorage } = require('./src/middleware/initStorage');         // Inicialização do sistema de arquivos
+const { swaggerSpec, swaggerUi, swaggerUiOptions } = require('./src/config/swagger'); // Documentação da API
+
+// ===================================================================
+// CONFIGURAÇÃO INICIAL DO SERVIDOR
+// ===================================================================
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Security middleware
+// ===================================================================
+// MIDDLEWARES DE SEGURANÇA
+// ===================================================================
+
+// Helmet: Adiciona cabeçalhos de segurança HTTP para proteger contra vulnerabilidades comuns
+// - X-Content-Type-Options: nosniff (previne MIME type sniffing)
+// - X-Frame-Options: DENY (previne clickjacking)
+// - X-XSS-Protection: 1; mode=block (proteção XSS)
+// - Strict-Transport-Security: força HTTPS em produção
 app.use(helmet());
 
-// Rate limiting
+// ===================================================================
+// CONFIGURAÇÃO DE RATE LIMITING
+// ===================================================================
+
+// Limita o número de requisições por IP para prevenir ataques de força bruta e DDoS
 const limiter = rateLimit({
-  windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000, // 15 minutes
-  max: process.env.RATE_LIMIT_MAX_REQUESTS || 100, // limit each IP to 100 requests per windowMs
+  windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000, // Janela de tempo: 15 minutos
+  max: process.env.RATE_LIMIT_MAX_REQUESTS || 100,             // Máximo de 100 requisições por IP na janela
   message: {
-    error: 'Too many requests from this IP, please try again later.'
-  }
+    error: 'Muitas requisições deste IP. Tente novamente mais tarde.'
+  },
+  standardHeaders: true,  // Retorna informações do rate limit nos headers `RateLimit-*`
+  legacyHeaders: false,   // Desabilita headers `X-RateLimit-*`
 });
 app.use(limiter);
 
-// CORS configuration
+// ===================================================================
+// CONFIGURAÇÃO CORS (Cross-Origin Resource Sharing)
+// ===================================================================
+
+// Configuração avançada de CORS para permitir requisições do frontend
+// Controla quais domínios podem acessar a API baseado no ambiente (dev/prod)
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Permite requisições sem origin (aplicações mobile, ferramentas de API como Postman)
     if (!origin) return callback(null, true);
     
-    // In development, allow localhost origins
+    // AMBIENTE DE DESENVOLVIMENTO: Permite origins localhost
     if (process.env.NODE_ENV === 'development') {
       const allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://localhost:8080',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:5173',
-        'http://127.0.0.1:8080'
+        'http://localhost:3000',    // React padrão
+        'http://localhost:5173',    // Vite padrão
+        'http://localhost:8080',    // Servidor local alternativo
+        'http://127.0.0.1:3000',   // IP local - React
+        'http://127.0.0.1:5173',   // IP local - Vite
+        'http://127.0.0.1:8080'    // IP local - alternativo
       ];
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
     }
     
-    // In production, allow specific domains
+    // AMBIENTE DE PRODUÇÃO: Permite apenas domínios específicos e seguros
     const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      process.env.PRODUCTION_URL,
-      process.env.PRODUCTION_FRONTEND_URL,
-      'http://capmi3d.discloud.app',
-      'https://capmi3d.discloud.app',
-      'http://cami3d.discloud.app',
-      'https://cami3d.discloud.app',
-      // Add your production frontend URL here
-    ].filter(Boolean);
+      process.env.FRONTEND_URL,              // URL do frontend definida no .env
+      process.env.PRODUCTION_URL,            // URL de produção do backend
+      process.env.PRODUCTION_FRONTEND_URL,   // URL de produção do frontend
+      'http://capmi3d.discloud.app',         // Backend DisCloud (HTTP)
+      'https://capmi3d.discloud.app',        // Backend DisCloud (HTTPS)
+      'http://cami3d.discloud.app',          // Frontend DisCloud (HTTP)
+      'https://cami3d.discloud.app',         // Frontend DisCloud (HTTPS)
+    ].filter(Boolean); // Remove valores undefined/null
     
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     
-    // For API testing tools and direct API calls, allow if no origin
+    // Para ferramentas de teste de API e chamadas diretas, permite quando não há origin
     callback(null, true);
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'X-Requested-With',
-    'Accept',
-    'Origin'
+  credentials: true,                        // Permite envio de cookies e headers de autenticação
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'], // Métodos HTTP permitidos
+  allowedHeaders: [                         // Headers permitidos nas requisições
+    'Content-Type',     // Tipo do conteúdo (application/json, etc.)
+    'Authorization',    // Token JWT para autenticação
+    'X-Requested-With', // Identifica requisições AJAX
+    'Accept',          // Tipos de resposta aceitos
+    'Origin'           // Origin da requisição
   ],
-  exposedHeaders: ['Content-Length', 'X-Request-ID'],
-  maxAge: 86400 // 24 hours
+  exposedHeaders: ['Content-Length', 'X-Request-ID'], // Headers expostos para o cliente
+  maxAge: 86400 // Cache do preflight por 24 horas (evita requisições OPTIONS desnecessárias)
 };
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests for all routes
+// Gerencia requisições OPTIONS preflight para todas as rotas
+// Necessário para requisições CORS complexas (com headers customizados)
 app.options('*', cors(corsOptions));
 
-// Debug middleware for CORS (only in development)
+// ===================================================================
+// MIDDLEWARE DE DEBUG CORS (APENAS EM DESENVOLVIMENTO)
+// ===================================================================
+
+// Log detalhado de requisições CORS para debug durante desenvolvimento
 if (process.env.NODE_ENV === 'development') {
   app.use((req, res, next) => {
-    console.log(`CORS Debug - Origin: ${req.get('origin')}, Method: ${req.method}, Path: ${req.path}`);
+    console.log(`🌐 CORS Debug - Origin: ${req.get('origin')}, Método: ${req.method}, Rota: ${req.path}`);
     next();
   });
 }
 
-// Logging
+// ===================================================================
+// MIDDLEWARES DE APLICAÇÃO
+// ===================================================================
+
+// Sistema de logging de requisições HTTP
+// - 'combined': formato completo para produção (inclui user-agent, referer, etc.)
+// - 'dev': formato simplificado e colorido para desenvolvimento
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Parsing do corpo das requisições HTTP
+app.use(express.json({ limit: '10mb' }));                        // Parse JSON até 10MB
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));  // Parse form data até 10MB
 
-// Static files - serve uploaded images
+// ===================================================================
+// ARQUIVOS ESTÁTICOS
+// ===================================================================
+
+// Serve imagens e arquivos uploadados na rota /uploads
+// Exemplo: /uploads/image123.jpg aponta para ./uploads/image123.jpg
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Swagger JSON endpoint
+// ===================================================================
+// ENDPOINTS DE DOCUMENTAÇÃO
+// ===================================================================
+
+// Endpoint para JSON da especificação Swagger/OpenAPI
+// Usado por ferramentas que consomem a documentação programaticamente
 app.get('/api-docs.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
@@ -122,8 +175,11 @@ app.get('/api-docs.json', (req, res) => {
  * @swagger
  * /health:
  *   get:
- *     summary: Health Check
- *     description: Verifica se a API está funcionando corretamente
+ *     summary: Verificação de Saúde da API
+ *     description: |
+ *       Endpoint para monitoramento da saúde da API.
+ *       Retorna informações sobre o status do servidor, timestamp e versão.
+ *       Usado por sistemas de monitoramento e load balancers.
  *     tags: [Health]
  *     responses:
  *       200:
@@ -136,71 +192,133 @@ app.get('/api-docs.json', (req, res) => {
  *                 status:
  *                   type: string
  *                   example: OK
+ *                   description: Status atual da API
  *                 message:
  *                   type: string
  *                   example: Cami3D API is running
+ *                   description: Mensagem descritiva do status
  *                 timestamp:
  *                   type: string
  *                   format: date-time
+ *                   description: Timestamp atual do servidor
  *                 version:
  *                   type: string
  *                   example: 1.0.0
+ *                   description: Versão atual da API
  */
-// Health check endpoint
+// Endpoint de verificação de saúde da API
+// Usado para monitoramento, health checks de containers e load balancers
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
-    message: 'Cami3D API is running',
+    message: 'Cami3D API está funcionando',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
 });
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/tshirt', tshirtRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/user', userRoutes);
+// ===================================================================
+// ROTAS DA API
+// ===================================================================
 
-// Swagger Documentation na rota raiz (depois das rotas da API)
+// Rotas organizadas por funcionalidade com prefixo /api
+app.use('/api/auth', authRoutes);      // Autenticação: login, registro, recuperação de senha
+app.use('/api/tshirt', tshirtRoutes);  // Designs de camisetas: CRUD, galeria, compartilhamento
+app.use('/api/upload', uploadRoutes);  // Upload de imagens: envio, listagem, exclusão
+app.use('/api/user', userRoutes);      // Usuários: perfil, configurações, estatísticas
+
+// ===================================================================
+// DOCUMENTAÇÃO SWAGGER UI
+// ===================================================================
+
+// Interface web da documentação da API na rota raiz
+// Acessível em: http://localhost:8080/ ou https://capmi3d.discloud.app/
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
-// 404 handler
+// ===================================================================
+// TRATAMENTO DE ERROS E ROTAS INEXISTENTES
+// ===================================================================
+
+// Handler para rotas não encontradas (404)
+// Captura todas as requisições que não correspondem às rotas definidas
 app.use('*', (req, res) => {
   res.status(404).json({
-    error: 'Route not found',
-    message: `The endpoint ${req.originalUrl} does not exist`
+    error: 'Rota não encontrada',
+    message: `O endpoint ${req.originalUrl} não existe`,
+    availableEndpoints: [
+      '/health',
+      '/api/auth/*',
+      '/api/tshirt/*', 
+      '/api/upload/*',
+      '/api/user/*',
+      '/api-docs.json',
+      '/ (documentação)'
+    ]
   });
 });
 
-// Error handling middleware (should be last)
+// Middleware global de tratamento de erros (deve ser o último)
+// Captura e processa todos os erros não tratados da aplicação
 app.use(errorHandler);
 
-// Start server
+// ===================================================================
+// INICIALIZAÇÃO DO SERVIDOR
+// ===================================================================
+
+/**
+ * Função assíncrona para inicializar o servidor de forma sequencial
+ * 1. Conecta ao banco de dados MongoDB
+ * 2. Inicializa o sistema de armazenamento de arquivos
+ * 3. Inicia o servidor Express na porta especificada
+ * 4. Exibe informações de status e URLs importantes
+ */
 const startServer = async () => {
   try {
-    // Conectar ao MongoDB
+    // Etapa 1: Estabelece conexão com MongoDB Atlas
+    console.log('🔌 Conectando ao banco de dados...');
     await connectDB();
 
-    // Inicializar sistema de armazenamento (para uploads)
+    // Etapa 2: Inicializa sistema de arquivos (cria pastas necessárias)
+    console.log('📁 Inicializando sistema de armazenamento...');
     await initStorage();
 
+    // Etapa 3: Inicia o servidor HTTP
     app.listen(PORT, () => {
-      console.log(`🚀 Cami3D Backend Server running on port ${PORT}`);
-      console.log(`📁 Environment: ${process.env.NODE_ENV}`);
-      console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
-      console.log(`🌐 Production Backend: ${process.env.PRODUCTION_URL}`);
-      console.log(`🌐 Production Frontend: ${process.env.PRODUCTION_FRONTEND_URL}`);
-      console.log(`🗄️  MongoDB: Connected`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
-      console.log(`📖 API Documentation: http://localhost:${PORT}/`);
+      console.log('\n🎉 ===== CAMI3D BACKEND INICIADO COM SUCESSO =====');
+      console.log(`🚀 Servidor rodando na porta: ${PORT}`);
+      console.log(`📁 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🗄️  Banco de dados: MongoDB Atlas (Conectado)`);
+      console.log('\n📍 URLs importantes:');
+      console.log(`   Health Check: http://localhost:${PORT}/health`);
+      console.log(`   Documentação: http://localhost:${PORT}/`);
+      console.log(`   API Base: http://localhost:${PORT}/api`);
+      console.log('\n🌐 URLs de produção:');
+      console.log(`   Backend: ${process.env.PRODUCTION_URL || 'Não configurado'}`);
+      console.log(`   Frontend: ${process.env.PRODUCTION_FRONTEND_URL || 'Não configurado'}`);
+      console.log('\n� Recursos disponíveis:');
+      console.log('   ✅ Autenticação JWT');
+      console.log('   ✅ Upload de imagens');
+      console.log('   ✅ Designs de camisetas 3D');
+      console.log('   ✅ Galeria pública');
+      console.log('   ✅ Rate limiting');
+      console.log('   ✅ CORS configurado');
+      console.log('   ✅ Documentação Swagger');
+      console.log('================================================\n');
     });
+    
   } catch (error) {
-    console.error('❌ Falha ao iniciar servidor:', error);
+    console.error('❌ ERRO CRÍTICO: Falha ao iniciar servidor:', error);
+    console.error('\n🔍 Possíveis causas:');
+    console.error('   - Problema de conexão com MongoDB');
+    console.error('   - Porta já em uso');
+    console.error('   - Variáveis de ambiente incorretas');
+    console.error('   - Permissões de arquivo insuficientes');
+    console.error('\n💡 Verifique o arquivo .env e tente novamente.\n');
     process.exit(1);
   }
 };
 
+// Inicia o servidor
 startServer();
 
 module.exports = app;
