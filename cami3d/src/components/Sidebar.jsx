@@ -63,9 +63,9 @@ function Sidebar({ tshirtConfig, updateConfig, onFinalizePedido, userToken }) {
   ]
 
   const styles = [
-    { id: 'crew-neck', name: 'Gola Redonda' },
-    { id: 'tank-top', name: 'Regata' },
-    { id: 'long-sleeve', name: 'Manga Longa' }
+    { id: 'crew-neck', name: 'Modelo Masculino' },
+    { id: 'tank-top', name: 'Modelo Feminino' },
+    { id: 'long-sleeve', name: 'Modelo Manga Longa' }
   ]
 
   return (
