@@ -62,19 +62,6 @@ cd Cami3d
 - Rate limiting
 - Upload de arquivos
 
-## Estrutura
-
-```
-Cami3d/
-├── backend/           # API Node.js/Express
-│   ├── src/routes/   # Endpoints da API
-│   ├── src/models/   # Schemas MongoDB
-│   └── uploads/      # Arquivos dos usuários
-├── cami3d/           # Frontend React
-│   └── src/          # Componentes e lógica
-└── tests/            # Testes automatizados
-```
-
 ## API Endpoints
 
 ### Autenticação (`/api/auth`)
