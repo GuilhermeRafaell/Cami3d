@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -38,6 +39,14 @@ const userSchema = new mongoose.Schema({
   profileImage: {
     type: String,
     default: null
+  },
+  resetPasswordToken: {
+    type: String,
+    default: null
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true, // Adiciona createdAt e updatedAt automaticamente
@@ -75,6 +84,33 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 userSchema.methods.updateLastLogin = async function() {
   this.lastLogin = new Date();
   return this.save();
+};
+
+// Método para gerar token de reset de senha
+userSchema.methods.generatePasswordResetToken = function() {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash do token para armazenar no banco
+  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  
+  // Token expira em 10 minutos
+  this.resetPasswordExpires = Date.now() + 10 * 60 * 1000;
+  
+  return resetToken; // Retorna o token não hasheado para enviar por email
+};
+
+// Método para verificar token de reset
+userSchema.methods.verifyPasswordResetToken = function(token) {
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  
+  return this.resetPasswordToken === hashedToken && 
+         this.resetPasswordExpires > Date.now();
+};
+
+// Método para limpar tokens de reset
+userSchema.methods.clearPasswordResetToken = function() {
+  this.resetPasswordToken = undefined;
+  this.resetPasswordExpires = undefined;
 };
 
 // Índices para performance (removendo duplicatas)

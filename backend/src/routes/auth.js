@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken } = require('../middleware/auth');
 const { User } = require('../models');
+const { sendPasswordResetEmail, testEmailConfig } = require('../config/email');
 
 const router = express.Router();
 
@@ -314,7 +315,7 @@ router.post('/forgot-password', [
   body('email')
     .isEmail()
     .normalizeEmail()
-    .withMessage('Please provide a valid email')
+    .withMessage('Por favor, forneça um email válido')
 ], async (req, res) => {
   try {
     // Check validation errors
@@ -330,13 +331,29 @@ router.post('/forgot-password', [
     const user = await User.findOne({ email });
     
     // Always return success for security (don't reveal if email exists)
-    // In a real system, an email with reset token would be sent
-    
-    if (user) {
-      // TODO: Implement email sending with reset token
-      console.log(`Password reset requested for: ${email}`);
+    if (!user) {
+      return res.json({
+        message: 'Se o email existir, você receberá instruções para redefinir sua senha.'
+      });
     }
 
+    // Generate reset token
+    const resetToken = user.generatePasswordResetToken();
+    await user.save();
+
+    // Send reset email
+    const emailResult = await sendPasswordResetEmail(email, resetToken, user.name);
+    
+    if (!emailResult.success) {
+      console.error('Failed to send reset email:', emailResult.error);
+      // Don't reveal internal errors to user
+      return res.json({
+        message: 'Se o email existir, você receberá instruções para redefinir sua senha.'
+      });
+    }
+
+    console.log(`Password reset email sent to: ${email}`);
+    
     res.json({
       message: 'Se o email existir, você receberá instruções para redefinir sua senha.'
     });
@@ -346,6 +363,204 @@ router.post('/forgot-password', [
     res.status(500).json({
       error: 'Erro do servidor',
       message: 'Erro ao processar solicitação de recuperação'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/verify-reset-token:
+ *   post:
+ *     summary: Verificar token de reset
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token]
+ *             properties:
+ *               token: { type: string }
+ *     responses:
+ *       200:
+ *         description: Token válido
+ *       400:
+ *         description: Token inválido ou expirado
+ */
+// Verificar se token de reset é válido
+// POST /api/auth/verify-reset-token
+router.post('/verify-reset-token', [
+  body('token')
+    .notEmpty()
+    .withMessage('Token é obrigatório')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Falha na validação',
+        details: errors.array()
+      });
+    }
+
+    const { token } = req.body;
+    
+    // Procurar usuário com o token hasheado
+    const crypto = require('crypto');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        error: 'Token inválido',
+        message: 'Token de recuperação inválido ou expirado'
+      });
+    }
+
+    res.json({
+      message: 'Token válido',
+      email: user.email
+    });
+
+  } catch (error) {
+    console.error('Verify reset token error:', error);
+    res.status(500).json({
+      error: 'Erro do servidor',
+      message: 'Erro ao verificar token'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Redefinir senha
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token: { type: string }
+ *               password: { type: string, minLength: 6 }
+ *     responses:
+ *       200:
+ *         description: Senha redefinida com sucesso
+ *       400:
+ *         description: Token inválido ou senha inválida
+ */
+// Redefinir senha usando token
+// POST /api/auth/reset-password
+router.post('/reset-password', [
+  body('token')
+    .notEmpty()
+    .withMessage('Token é obrigatório'),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('A senha deve ter pelo menos 6 caracteres')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: 'Falha na validação',
+        details: errors.array()
+      });
+    }
+
+    const { token, password } = req.body;
+    
+    // Procurar usuário com o token hasheado
+    const crypto = require('crypto');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        error: 'Token inválido',
+        message: 'Token de recuperação inválido ou expirado'
+      });
+    }
+
+    // Atualizar senha (será hasheada automaticamente pelo middleware)
+    user.password = password;
+    user.clearPasswordResetToken();
+    await user.save();
+
+    console.log(`Password reset successful for user: ${user.email}`);
+
+    res.json({
+      message: 'Senha redefinida com sucesso! Você já pode fazer login com sua nova senha.',
+      success: true
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      error: 'Erro do servidor',
+      message: 'Erro ao redefinir senha'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/test-email:
+ *   get:
+ *     summary: Testar configuração de email
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Configuração de email válida
+ *       500:
+ *         description: Erro na configuração de email
+ */
+// Endpoint para testar configuração de email (apenas para desenvolvimento)
+// GET /api/auth/test-email
+router.get('/test-email', async (req, res) => {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({
+        error: 'Endpoint não disponível em produção'
+      });
+    }
+
+    const isConfigValid = await testEmailConfig();
+    
+    if (isConfigValid) {
+      res.json({
+        message: 'Configuração de email válida!',
+        config: {
+          host: process.env.MAIL_HOST,
+          port: process.env.MAIL_PORT,
+          username: process.env.MAIL_USERNAME ? '***' + process.env.MAIL_USERNAME.slice(-4) : 'não configurado'
+        }
+      });
+    } else {
+      res.status(500).json({
+        error: 'Erro na configuração de email',
+        message: 'Verifique as credenciais do MailTrap'
+      });
+    }
+
+  } catch (error) {
+    console.error('Test email error:', error);
+    res.status(500).json({
+      error: 'Erro do servidor',
+      message: 'Erro ao testar configuração de email'
     });
   }
 });

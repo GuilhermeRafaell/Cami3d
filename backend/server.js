@@ -29,6 +29,7 @@ const userRoutes = require('./src/routes/user');        // Gerenciamento de usu�
 const errorHandler = require('./src/middleware/errorHandler');           // Tratamento global de erros
 const { initStorage } = require('./src/middleware/initStorage');         // Inicialização do sistema de arquivos
 const { swaggerSpec, swaggerUi, swaggerUiOptions } = require('./src/config/swagger'); // Documentação da API
+const { testEmailConfig } = require('./src/config/email');               // Configuração de email
 
 // ===================================================================
 // CONFIGURAÇÃO INICIAL DO SERVIDOR
@@ -42,11 +43,22 @@ const PORT = process.env.PORT || 8080;
 // ===================================================================
 
 // Helmet: Adiciona cabeçalhos de segurança HTTP para proteger contra vulnerabilidades comuns
-// - X-Content-Type-Options: nosniff (previne MIME type sniffing)
-// - X-Frame-Options: DENY (previne clickjacking)
-// - X-XSS-Protection: 1; mode=block (proteção XSS)
-// - Strict-Transport-Security: força HTTPS em produção
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false
+}));
 
 // ===================================================================
 // CONFIGURAÇÃO DE RATE LIMITING
@@ -282,7 +294,18 @@ const startServer = async () => {
     console.log('📁 Inicializando sistema de armazenamento...');
     await initStorage();
 
-    // Etapa 3: Inicia o servidor HTTP
+    // Etapa 3: Testa configuração de email (apenas em desenvolvimento)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📧 Testando configuração de email...');
+      const emailConfigValid = await testEmailConfig();
+      if (emailConfigValid) {
+        console.log('✅ Configuração de email válida');
+      } else {
+        console.log('⚠️  Aviso: Configuração de email pode estar incorreta');
+      }
+    }
+
+    // Etapa 4: Inicia o servidor HTTP
     app.listen(PORT, () => {
       console.log('\n🎉 ===== CAMI3D BACKEND INICIADO COM SUCESSO =====');
       console.log(`🚀 Servidor rodando na porta: ${PORT}`);
@@ -303,6 +326,7 @@ const startServer = async () => {
       console.log('   ✅ Rate limiting');
       console.log('   ✅ CORS configurado');
       console.log('   ✅ Documentação Swagger');
+      console.log('   ✅ Recuperação de senha por email');
       console.log('================================================\n');
     });
     
