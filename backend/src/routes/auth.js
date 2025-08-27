@@ -328,31 +328,38 @@ router.post('/forgot-password', [
     }
 
     const { email } = req.body;
+    console.log(`[FORGOT-PASSWORD] Solicitação recebida para email: ${email}`);
+    
     const user = await User.findOne({ email });
     
     // Always return success for security (don't reveal if email exists)
     if (!user) {
+      console.log(`[FORGOT-PASSWORD] Usuário não encontrado para email: ${email}`);
       return res.json({
         message: 'Se o email existir, você receberá instruções para redefinir sua senha.'
       });
     }
 
+    console.log(`[FORGOT-PASSWORD] Usuário encontrado: ${user.name} (${email})`);
+
     // Generate reset token
     const resetToken = user.generatePasswordResetToken();
     await user.save();
+    console.log(`[FORGOT-PASSWORD] Token gerado e usuário salvo para: ${email}`);
 
     // Send reset email
+    console.log(`[FORGOT-PASSWORD] Tentando enviar email para: ${email}`);
     const emailResult = await sendPasswordResetEmail(email, resetToken, user.name);
     
     if (!emailResult.success) {
-      console.error('Failed to send reset email:', emailResult.error);
+      console.error(`[FORGOT-PASSWORD] Falha ao enviar email para ${email}:`, emailResult.error);
       // Don't reveal internal errors to user
       return res.json({
         message: 'Se o email existir, você receberá instruções para redefinir sua senha.'
       });
     }
 
-    console.log(`Password reset email sent to: ${email}`);
+    console.log(`[FORGOT-PASSWORD] ✅ Email enviado com sucesso para: ${email}, MessageID: ${emailResult.messageId}`);
     
     res.json({
       message: 'Se o email existir, você receberá instruções para redefinir sua senha.'

@@ -3,26 +3,24 @@ const nodemailer = require('nodemailer');
 // Configuração do transporte de email usando MailTrap
 const createTransporter = () => {
   // Validação de variáveis obrigatórias
-  if (!process.env.MAIL_HOST || !process.env.MAIL_PORT || !process.env.MAIL_USERNAME || !process.env.MAIL_PASSWORD) {
-    throw new Error('Configurações de email não definidas. Verifique as variáveis MAIL_HOST, MAIL_PORT, MAIL_USERNAME e MAIL_PASSWORD no arquivo .env');
+  if (!process.env.MAIL_HOST || !process.env.MAIL_PORT || !process.env.MAIL_USERNAME || !process.env.MAIL_PASSWORD || !process.env.MAIL_SECURE || !process.env.MAIL_REJECT_UNAUTHORIZED || !process.env.MAIL_FROM || !process.env.PRODUCTION_FRONTEND_URL) {
+    throw new Error('Configurações de email não definidas. Verifique as variáveis MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, MAIL_SECURE, MAIL_REJECT_UNAUTHORIZED, MAIL_FROM e PRODUCTION_FRONTEND_URL no arquivo .env');
   }
 
   return nodemailer.createTransport({
     host: process.env.MAIL_HOST,
     port: parseInt(process.env.MAIL_PORT),
-    secure: process.env.MAIL_PORT === '465', // true for 465, false for other ports
+    secure: process.env.MAIL_SECURE === 'true',
     auth: {
       user: process.env.MAIL_USERNAME,
       pass: process.env.MAIL_PASSWORD,
     },
     tls: {
-      // Em produção: validação rigorosa de certificados SSL
-      // Em desenvolvimento: aceita certificados do MailTrap
-      rejectUnauthorized: process.env.NODE_ENV === 'production'
+      rejectUnauthorized: process.env.MAIL_REJECT_UNAUTHORIZED === 'true'
     },
-    connectionTimeout: 10000, // 10 segundos
-    greetingTimeout: 10000,   // 10 segundos
-    socketTimeout: 10000      // 10 segundos
+    connectionTimeout: parseInt(process.env.MAIL_CONNECTION_TIMEOUT || '10000'),
+    greetingTimeout: parseInt(process.env.MAIL_GREETING_TIMEOUT || '10000'),
+    socketTimeout: parseInt(process.env.MAIL_SOCKET_TIMEOUT || '10000')
   });
 };
 
@@ -35,11 +33,11 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
 
     const mailOptions = {
       from: {
-        name: 'Cami3D',
-        address: process.env.MAIL_FROM || 'noreply@cami3d.com'
+        name: process.env.MAIL_FROM_NAME || 'Sistema',
+        address: process.env.MAIL_FROM
       },
       to: email,
-      subject: 'Recuperação de Senha - Cami3D',
+      subject: process.env.MAIL_SUBJECT || 'Recuperação de Senha',
       html: `
         <!DOCTYPE html>
         <html lang="pt-BR">
@@ -68,14 +66,14 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
               margin-bottom: 30px;
             }
             .logo {
-              color: #007bff;
+              color: ${process.env.MAIL_BRAND_COLOR || '#007bff'};
               font-size: 28px;
               font-weight: bold;
               margin-bottom: 10px;
             }
             .button {
               display: inline-block;
-              background-color: #007bff;
+              background-color: ${process.env.MAIL_BUTTON_COLOR || '#007bff'};
               color: white;
               padding: 12px 30px;
               text-decoration: none;
@@ -84,7 +82,7 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
               font-weight: bold;
             }
             .button:hover {
-              background-color: #0056b3;
+              background-color: ${process.env.MAIL_BUTTON_HOVER_COLOR || '#0056b3'};
             }
             .warning {
               background-color: #fff3cd;
@@ -107,8 +105,8 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
         <body>
           <div class="container">
             <div class="header">
-              <div class="logo">Cami3D</div>
-              <h2>Recuperação de Senha</h2>
+              <div class="logo">${process.env.MAIL_FROM_NAME || 'Sistema'}</div>
+              <h2>${process.env.MAIL_SUBJECT || 'Recuperação de Senha'}</h2>
             </div>
             
             <p>Olá, <strong>${userName}</strong>!</p>
@@ -127,7 +125,7 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
             <div class="warning">
               <strong>⚠️ Importante:</strong>
               <ul>
-                <li>Este link é válido por apenas <strong>10 minutos</strong></li>
+                <li>Este link é válido por apenas <strong>${process.env.RESET_TOKEN_EXPIRY_MINUTES || '10'} minutos</strong></li>
                 <li>Se você não solicitou esta recuperação, ignore este email</li>
                 <li>Sua senha atual permanecerá inalterada até que você redefina</li>
               </ul>
@@ -137,7 +135,7 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
             
             <div class="footer">
               <p>Este é um email automático, por favor não responda.</p>
-              <p>&copy; 2025 Cami3D. Todos os direitos reservados.</p>
+              <p>&copy; ${new Date().getFullYear()} ${process.env.MAIL_FROM_NAME || 'Sistema'}. Todos os direitos reservados.</p>
             </div>
           </div>
         </body>
@@ -146,20 +144,20 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
       text: `
         Olá, ${userName}!
         
-        Recebemos uma solicitação para redefinir a senha da sua conta Cami3D.
+        Recebemos uma solicitação para redefinir a senha da sua conta ${process.env.MAIL_FROM_NAME || 'Sistema'}.
         
         Para redefinir sua senha, acesse o link abaixo:
         ${resetUrl}
         
         IMPORTANTE:
-        - Este link é válido por apenas 10 minutos
+        - Este link é válido por apenas ${process.env.RESET_TOKEN_EXPIRY_MINUTES || '10'} minutos
         - Se você não solicitou esta recuperação, ignore este email
         - Sua senha atual permanecerá inalterada até que você redefina
         
         Se você está tendo problemas com o link, copie e cole a URL completa no seu navegador.
         
         ---
-        Cami3D Team
+        ${process.env.MAIL_FROM_NAME || 'Sistema'} Team
         Este é um email automático, por favor não responda.
       `
     };
@@ -193,10 +191,10 @@ const testEmailConfig = async () => {
     const transporter = createTransporter();
     
     // Teste com timeout
-    console.log('🔗 Testando conexão com MailTrap...');
+    console.log(`🔗 Testando conexão com ${process.env.MAIL_HOST}...`);
     const verifyPromise = transporter.verify();
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout: Conexão demorou mais de 15 segundos')), 15000)
+      setTimeout(() => reject(new Error(`Timeout: Conexão demorou mais de ${process.env.MAIL_TEST_TIMEOUT || '15'} segundos`)), parseInt(process.env.MAIL_TEST_TIMEOUT || '15000'))
     );
     
     await Promise.race([verifyPromise, timeoutPromise]);

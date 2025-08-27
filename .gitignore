@@ -1,3 +1,6 @@
+/discloud
+*.zip
+
 # Logs
 logs/
 *.log
