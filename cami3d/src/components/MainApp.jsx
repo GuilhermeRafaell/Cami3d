@@ -144,12 +144,12 @@ function MainApp({ onNavigateToHome, user: initialUser, onLogin, onLogout }) {
         <div className="viewer-container">
           <TShirtOBJViewer config={tshirtConfig} />
           
-          {savedDesigns.length > 0 && (
+          {/* {savedDesigns.length > 0 && (
             <div className="saved-designs">
               <h3>Meus Designs ({savedDesigns.length})</h3>
               <p>Designs salvos no backend disponíveis</p>
             </div>
-          )}
+          )} */}
         </div>  
       </div>
 

@@ -136,6 +136,149 @@ function ShirtModel({ config }) {
         
         console.log(`Texto "${config.text}" aplicado na posição (${textX}, ${textY}) com tamanho ${fontSize}px e rotação ${config.textRotation || -180}° (corrigido espelhamento)`);
       }
+
+      // Aplicar forma geométrica se existir
+      if (config.selectedShape) {
+        const shapeScale = config.shapeScale || 1;
+        const shapeX = (config.shapePosition?.x || 0) * 300 + canvas.width / 2;
+        const shapeY = (config.shapePosition?.y || 0) * -300 + canvas.height / 2;
+        const shapeSize = 100 * shapeScale;
+        
+        // Salvar estado do contexto
+        ctx.save();
+        
+        // Espelhar horizontalmente para corrigir orientação
+        ctx.scale(-1, 1);
+        
+        // Aplicar rotação se especificada
+        if (config.shapeRotation) {
+          ctx.translate(-shapeX, shapeY);
+          ctx.rotate((-config.shapeRotation * Math.PI) / 180);
+          ctx.translate(shapeX, -shapeY);
+        }
+        
+        // Configurar cor da forma
+        ctx.fillStyle = config.shapeColor || '#000000';
+        ctx.strokeStyle = config.shapeColor || '#000000';
+        ctx.lineWidth = 2;
+        
+        // Desenhar forma baseada no SVG path (posição X invertida devido ao espelhamento)
+        const adjustedX = -shapeX;
+        const adjustedY = shapeY;
+        const size = shapeSize;
+        
+        ctx.translate(adjustedX, adjustedY);
+        ctx.scale(size / 100, size / 100); // Normalizar para tamanho base 100
+        
+        // Desenhar a forma baseada no ID
+        switch (config.selectedShape.id) {
+          case 'circle':
+            ctx.beginPath();
+            ctx.arc(0, 0, 40, 0, 2 * Math.PI);
+            ctx.fill();
+            break;
+            
+          case 'square':
+            ctx.fillRect(-35, -35, 70, 70);
+            break;
+            
+          case 'triangle':
+            ctx.beginPath();
+            ctx.moveTo(0, -35);
+            ctx.lineTo(35, 35);
+            ctx.lineTo(-35, 35);
+            ctx.closePath();
+            ctx.fill();
+            break;
+            
+          case 'heart':
+            ctx.beginPath();
+            ctx.moveTo(0, 35);
+            ctx.bezierCurveTo(-40, -10, -60, -25, -25, -35);
+            ctx.bezierCurveTo(-10, -45, 0, -35, 0, -35);
+            ctx.bezierCurveTo(0, -35, 10, -45, 25, -35);
+            ctx.bezierCurveTo(60, -25, 40, -10, 0, 35);
+            ctx.fill();
+            break;
+            
+          case 'star':
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+              const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+              const outerRadius = 40;
+              const innerRadius = 16;
+              
+              // Ponto externo
+              const xOuter = Math.cos(angle) * outerRadius;
+              const yOuter = Math.sin(angle) * outerRadius;
+              
+              // Ponto interno
+              const angleInner = angle + (2 * Math.PI) / 10;
+              const xInner = Math.cos(angleInner) * innerRadius;
+              const yInner = Math.sin(angleInner) * innerRadius;
+              
+              if (i === 0) {
+                ctx.moveTo(xOuter, yOuter);
+              } else {
+                ctx.lineTo(xOuter, yOuter);
+              }
+              ctx.lineTo(xInner, yInner);
+            }
+            ctx.closePath();
+            ctx.fill();
+            break;
+            
+          case 'diamond':
+            ctx.beginPath();
+            ctx.moveTo(0, -40);
+            ctx.lineTo(30, 0);
+            ctx.lineTo(0, 40);
+            ctx.lineTo(-30, 0);
+            ctx.closePath();
+            ctx.fill();
+            break;
+            
+          case 'hexagon':
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+              const angle = (i * Math.PI) / 3;
+              const x = Math.cos(angle) * 35;
+              const y = Math.sin(angle) * 35;
+              if (i === 0) {
+                ctx.moveTo(x, y);
+              } else {
+                ctx.lineTo(x, y);
+              }
+            }
+            ctx.closePath();
+            ctx.fill();
+            break;
+            
+          case 'lightning':
+            ctx.beginPath();
+            ctx.moveTo(-15, -40);
+            ctx.lineTo(-25, 0);
+            ctx.lineTo(-5, 0);
+            ctx.lineTo(-20, 40);
+            ctx.lineTo(20, -10);
+            ctx.lineTo(0, -10);
+            ctx.lineTo(15, -40);
+            ctx.closePath();
+            ctx.fill();
+            break;
+            
+          default:
+            // Forma padrão (círculo)
+            ctx.beginPath();
+            ctx.arc(0, 0, 40, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        // Restaurar estado do contexto
+        ctx.restore();
+        
+        console.log(`Forma "${config.selectedShape.name}" aplicada na posição (${shapeX}, ${shapeY}) com tamanho ${shapeSize}px e rotação ${config.shapeRotation || 0}°`);
+      }
     } catch (error) {
       console.error('Erro ao processar canvas:', error);
     }
@@ -187,7 +330,7 @@ function ShirtModel({ config }) {
           }
 
           // Aplicar textura ou cor
-          if (canvasTexture && (config.text || config.logo)) {
+          if (canvasTexture && (config.text || config.logo || config.selectedShape)) {
             // Usar textura do canvas
             child.material.map = canvasTexture;
             child.material.color.setHex(0xffffff); // Base neutra para não afetar a textura
