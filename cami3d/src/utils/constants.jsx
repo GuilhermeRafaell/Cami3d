@@ -10,7 +10,6 @@ export const ALLOWED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg'];
 // Configurações de design
 export const TSHIRT_STYLES = [
   { id: 'crew-neck', name: 'Gola Redonda' },
-  { id: 'v-neck', name: 'Gola V' },
   { id: 'tank-top', name: 'Regata' },
   { id: 'long-sleeve', name: 'Manga Longa' }
 ];
